@@ -7,9 +7,11 @@
         "php": ">=8.3",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "api-platform/core": "^4.3.17",
         "doctrine/doctrine-bundle": "^2.19",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^2.20.13",
+        "endroid/qr-code": "^6.1",
         "phpdocumentor/reflection-docblock": "^6.0.3",
         "phpstan/phpdoc-parser": "^2.3.3",
         "symfony/asset": "7.4.*",
@@ -39,8 +41,7 @@
         "symfony/web-link": "7.4.*",
         "symfony/yaml": "7.4.*",
         "twig/extra-bundle": "^2.12|^3.24",
-        "twig/twig": "^2.12|^3.28",
-        "api-platform/core": "^4.3.17"
+        "twig/twig": "^2.12|^3.28"
     },
     "config": {
         "allow-plugins": {

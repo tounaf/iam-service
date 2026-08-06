@@ -118,6 +118,28 @@ Toutes les APIs sont préfixées par `/api` et supportent les formats `json`, `j
 *   `PATCH /api/role_assignments/{id}` : Archivage ou désactivation d'un mandat en cours (par exemple lors d'une passation).
     *   *Payload* : `{"isActive": false, "endDate": "2024-12-31T23:59:59Z"}`
 
+### H. Code QR unique (QR Code) et Présences/Scans (Presence)
+
+Chaque membre possède un identifiant de QR code unique (`qrCodeToken`) généré automatiquement sous forme de jeton sécurisé lors de son inscription.
+
+#### 1. Génération de l'image du QR Code
+*   `GET /api/membres/{id}/qr-code` : Génère et retourne l'image PNG binaire haute définition (300x300 px) du QR Code unique du membre.
+    *   *Format* : Retourne directement un flux d'image binaire avec le header HTTP `Content-Type: image/png`.
+    *   *Exemple d'intégration html* : `<img src="http://localhost/api/membres/12/qr-code" />`
+
+#### 2. Enregistrement d'une présence ou participation (scan)
+Lorsqu'un membre présente son QR code à une activité ou formation (ex: "Formation des Jeunes 2026"), le responsable scanne le code et enregistre sa présence :
+*   `POST /api/presences` : Enregistre une présence scannée.
+    *   *Payload* :
+        ```json
+        {
+          "membre": "/api/membres/12",
+          "activityName": "Formation des Jeunes 2026",
+          "scannedBy": "/api/membres/1"
+        }
+        ```
+*   `GET /api/presences` : Liste de toutes les présences, filtrable par activité ou par membre.
+
 ---
 
 ## 4. Déploiement & Initialisation de la Base MySQL

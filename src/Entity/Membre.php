@@ -3,6 +3,11 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -13,6 +18,19 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\Entity]
 #[ORM\Table(name: 'membre')]
 #[ApiResource(
+    operations: [
+        new Get(),
+        new GetCollection(),
+        new Post(),
+        new Patch(),
+        new Delete(),
+        new Get(
+            uriTemplate: '/membres/{id}/qr-code',
+            controller: \App\Controller\MembreQrCodeController::class,
+            read: false,
+            serialize: false
+        )
+    ],
     normalizationContext: ['groups' => ['membre:read']],
     denormalizationContext: ['groups' => ['membre:write']]
 )]
@@ -69,11 +87,16 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
+    #[ORM\Column(length: 255, unique: true)]
+    #[Groups(['membre:read'])]
+    private ?string $qrCodeToken = null;
+
     public function __construct()
     {
         $this->associations = new ArrayCollection();
         $this->roleAssignments = new ArrayCollection();
         $this->roles = ['ROLE_USER'];
+        $this->qrCodeToken = bin2hex(random_bytes(16));
     }
 
     public function getId(): ?int
@@ -220,6 +243,17 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
         // If you store any temporary, sensitive data on the user, clear it here
+    }
+
+    public function getQrCodeToken(): ?string
+    {
+        return $this->qrCodeToken;
+    }
+
+    public function setQrCodeToken(string $qrCodeToken): self
+    {
+        $this->qrCodeToken = $qrCodeToken;
+        return $this;
     }
 
     public function getUserIdentifier(): string
