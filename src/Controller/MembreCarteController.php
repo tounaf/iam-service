@@ -1,0 +1,158 @@
+<?php
+
+namespace App\Controller;
+
+use App\Entity\Membre;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Annotation\Route;
+
+class MembreCarteController extends AbstractController
+{
+    #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
+    public function __invoke(?Membre $membre): Response
+    {
+        if (!$membre) {
+            throw new NotFoundHttpException('Membre non trouvé.');
+        }
+
+        $token = $membre->getQrCodeToken() ?: 'N/A';
+
+        // Generate QR code inline as base64
+        $qrCode = new QrCode(
+            data: $token,
+            size: 150,
+            margin: 5
+        );
+        $writer = new PngWriter();
+        $qrCodeBase64 = base64_encode($writer->write($qrCode)->getString());
+
+        // Get church, group/zone and associations details
+        $rawFiangonanaNom = $membre->getFiangonana() ? $membre->getFiangonana()->getNom() : 'Paroisse';
+        $fiangonanaNom = htmlspecialchars($rawFiangonanaNom ?? 'Paroisse', ENT_QUOTES, 'UTF-8');
+
+        $rawGroupeNom = $membre->getZoneGeographique() ? $membre->getZoneGeographique()->getNom() : 'Non spécifié';
+        $groupeNom = htmlspecialchars($rawGroupeNom ?? 'Non spécifié', ENT_QUOTES, 'UTF-8');
+
+        $associationsList = [];
+        foreach ($membre->getAssociations() as $assoc) {
+            $associationsList[] = htmlspecialchars($assoc->getNom() ?? '', ENT_QUOTES, 'UTF-8');
+        }
+        $associationsStr = !empty($associationsList) ? implode(', ', $associationsList) : 'Aucune';
+
+        $nom = htmlspecialchars($membre->getNom() ?? '', ENT_QUOTES, 'UTF-8');
+        $prenom = htmlspecialchars($membre->getPrenom() ?? '', ENT_QUOTES, 'UTF-8');
+        $email = htmlspecialchars($membre->getEmail() ?? '', ENT_QUOTES, 'UTF-8');
+        $telephone = htmlspecialchars($membre->getTelephone() ?? 'Non renseigné', ENT_QUOTES, 'UTF-8');
+
+        // Let's craft a beautiful, print-friendly, responsive HTML and CSS card design
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Membre - {$nom} {$prenom}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                margin: 20px auto;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex space-x-4">
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimer la carte
+        </button>
+    </div>
+
+    <!-- Beautiful Member Card -->
+    <div class="print-card bg-white w-full max-w-[480px] rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col relative transition duration-300 hover:shadow-3xl">
+        <!-- Top Colored Header Bar -->
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-4 flex justify-between items-center">
+            <div>
+                <h2 class="text-xs font-semibold uppercase tracking-widest text-blue-200">Carte de Membre Officielle</h2>
+                <h1 class="text-base font-bold truncate max-w-[320px]">{$fiangonanaNom}</h1>
+            </div>
+            <!-- Decorative badge -->
+            <span class="bg-blue-500/30 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded border border-blue-400/30">
+                Membre
+            </span>
+        </div>
+
+        <!-- Main Card Body -->
+        <div class="p-6 flex flex-row items-start space-x-6">
+            <!-- Left Side: Member Information -->
+            <div class="flex-1 space-y-3">
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Nom & Prénom</p>
+                    <p class="text-lg font-bold text-slate-800 leading-snug">{$nom} {$prenom}</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-2 text-xs">
+                    <div>
+                        <p class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Zone / Groupe</p>
+                        <p class="text-slate-700 font-medium">{$groupeNom}</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Associations</p>
+                        <p class="text-slate-700 font-medium line-clamp-2">{$associationsStr}</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Contact</p>
+                        <p class="text-slate-600 font-medium">{$email}</p>
+                        <p class="text-slate-600 font-medium">{$telephone}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: QR Code -->
+            <div class="flex flex-col items-center justify-center bg-slate-50 p-2 rounded-xl border border-slate-100 shadow-inner">
+                <img class="w-28 h-28 mix-blend-multiply" src="data:image/png;base64,{$qrCodeBase64}" alt="QR Code du Membre" />
+                <span class="text-[8px] uppercase tracking-widest text-slate-400 mt-2 font-bold">Scanner pour présence</span>
+            </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500">
+            <span>ID Membre: #{$membre->getId()}</span>
+            <span class="font-medium">Validité Permanente</span>
+        </div>
+    </div>
+
+</body>
+</html>
+HTML;
+
+        return new Response(
+            $html,
+            Response::HTTP_OK,
+            [
+                'Content-Type' => 'text/html; charset=UTF-8',
+                'Cache-Control' => 'public, max-age=3600'
+            ]
+        );
+    }
+}
