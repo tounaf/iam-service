@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class MembreQrCodeController extends AbstractController
 {
     #[Route('/api/membres/{id}/qr-code', name: 'api_membre_qrcode', methods: ['GET'])]
-    public function __invoke(?Membre $membre): Response
+    public function __invoke(?Membre $membre, ?\Symfony\Component\HttpFoundation\Request $request = null): Response
     {
         if (!$membre) {
             throw new NotFoundHttpException('Membre non trouvé.');
@@ -24,9 +24,21 @@ class MembreQrCodeController extends AbstractController
             $token = 'N/A';
         }
 
+        if ($request === null) {
+            $request = \Symfony\Component\HttpFoundation\Request::createFromGlobals();
+        }
+
+        $raw = $request->query->get('raw');
+        if ($raw) {
+            $data = $token;
+        } else {
+            $host = $request->getSchemeAndHttpHost() ?: 'http://localhost';
+            $data = $token !== 'N/A' ? sprintf('%s/membres/scan/%s', $host, $token) : 'N/A';
+        }
+
         // Generate QR Code using endroid/qr-code
         $qrCode = new QrCode(
-            data: $token,
+            data: $data,
             size: 300,
             margin: 10
         );

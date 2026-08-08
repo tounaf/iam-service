@@ -29,6 +29,18 @@ use Symfony\Component\Serializer\Annotation\Groups;
             controller: \App\Controller\MembreQrCodeController::class,
             read: false,
             serialize: false
+        ),
+        new Get(
+            uriTemplate: '/membres/{id}/carte',
+            controller: \App\Controller\MembreCarteController::class,
+            read: false,
+            serialize: false
+        ),
+        new Get(
+            uriTemplate: '/membres/{id}/stats',
+            controller: \App\Controller\MembreStatsController::class,
+            read: false,
+            serialize: false
         )
     ],
     normalizationContext: ['groups' => ['membre:read']],
