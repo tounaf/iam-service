@@ -11,6 +11,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Twig\Environment;
 
 class MembreCarteControllerTest extends TestCase
 {
@@ -32,7 +33,19 @@ class MembreCarteControllerTest extends TestCase
         $member->method('getZoneGeographique')->willReturn($groupe);
         $member->method('getAssociations')->willReturn(new ArrayCollection());
 
-        $controller = new MembreCarteController();
+        // Create mock of Twig Environment
+        $twig = $this->createMock(Environment::class);
+        $twig->method('render')
+            ->with('membre/carte.html.twig', $this->callback(function (array $context) {
+                return $context['nom'] === 'Ratsimbazafy'
+                    && $context['prenom'] === 'Nirina'
+                    && $context['fiangonanaNom'] === 'Test Church'
+                    && $context['groupeNom'] === 'Test Geographic Zone'
+                    && $context['membreId'] === 42;
+            }))
+            ->willReturn('Nirina Ratsimbazafy Test Church Test Geographic Zone /api/membres/42/qr-code');
+
+        $controller = new MembreCarteController($twig);
         $response = $controller->__invoke($member);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -51,7 +64,8 @@ class MembreCarteControllerTest extends TestCase
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage('Membre non trouvé.');
 
-        $controller = new MembreCarteController();
+        $twig = $this->createMock(Environment::class);
+        $controller = new MembreCarteController($twig);
         $controller->__invoke(null);
     }
 }

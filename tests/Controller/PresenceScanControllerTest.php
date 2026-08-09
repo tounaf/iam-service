@@ -11,10 +11,17 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Twig\Environment;
 
 class PresenceScanControllerTest extends TestCase
 {
+    private function createTwigMock(string $returnValue): Environment
+    {
+        $twig = $this->createMock(Environment::class);
+        $twig->method('render')->willReturn($returnValue);
+        return $twig;
+    }
+
     public function testInvokeReturnsNotFoundForInvalidToken(): void
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
@@ -29,7 +36,8 @@ class PresenceScanControllerTest extends TestCase
             ->willReturn($repository);
 
         $request = new Request();
-        $controller = new PresenceScanController();
+        $twig = $this->createTwigMock('Code QR non reconnu: Le code QR scanné ne correspond à aucun membre enregistré.');
+        $controller = new PresenceScanController($twig);
 
         $response = $controller->__invoke('invalid_token', $request, $entityManager);
 
@@ -55,7 +63,8 @@ class PresenceScanControllerTest extends TestCase
             ->willReturn($repository);
 
         $request = Request::create('/membres/scan/valid_token', 'GET');
-        $controller = new PresenceScanController();
+        $twig = $this->createTwigMock('Validation de Présence pour Nirina Ratsimbazafy');
+        $controller = new PresenceScanController($twig);
 
         $response = $controller->__invoke('valid_token', $request, $entityManager);
 
@@ -82,7 +91,8 @@ class PresenceScanControllerTest extends TestCase
             ->willReturn($repository);
 
         $request = Request::create('/membres/scan/valid_token', 'POST', ['activityName' => '']);
-        $controller = new PresenceScanController();
+        $twig = $this->createTwigMock('Veuillez saisir ou choisir le nom de l&#039;activité.');
+        $controller = new PresenceScanController($twig);
 
         $response = $controller->__invoke('valid_token', $request, $entityManager);
 
@@ -119,7 +129,8 @@ class PresenceScanControllerTest extends TestCase
         $tokenStorage = $this->createMock(TokenStorageInterface::class);
         $tokenStorage->method('getToken')->willReturn(null);
 
-        $controller = new PresenceScanController();
+        $twig = $this->createTwigMock('Présence Validée ! Activité: Formation des Jeunes 2026');
+        $controller = new PresenceScanController($twig);
 
         $response = $controller->__invoke('valid_token', $request, $entityManager, $tokenStorage);
 
