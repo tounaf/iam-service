@@ -37,8 +37,8 @@ use Symfony\Component\Serializer\Annotation\Groups;
             serialize: false
         ),
         new Get(
-            uriTemplate: '/membres/{id}/participation-stats',
-            controller: \App\Controller\MembreParticipationController::class,
+            uriTemplate: '/membres/{id}/stats',
+            controller: \App\Controller\MembreStatsController::class,
             read: false,
             serialize: false
         )

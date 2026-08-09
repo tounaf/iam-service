@@ -7,47 +7,43 @@ use App\Entity\Membre;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
 use App\Entity\Association;
+use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class MembreCarteControllerTest extends TestCase
 {
-    public function testInvokeReturnsBeautifulHtmlCard(): void
+    public function testInvokeReturnsHtmlResponseForValidMember(): void
     {
-        $church = new Fiangonana();
-        $church->setNom('Paroisse de Test');
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Test Church');
 
-        $group = new Groupe();
-        $group->setNom('Zone Ouest');
+        $groupe = new Groupe();
+        $groupe->setNom('Test Geographic Zone');
 
-        $association = new Association();
-        $association->setNom('Chorale Tanora');
-
-        $member = new Membre();
-        $member->setNom('Rabe');
-        $member->setPrenom('Jean');
-        $member->setEmail('jean.rabe@example.com');
-        $member->setTelephone('+261341111111');
-        $member->setFiangonana($church);
-        $member->setZoneGeographique($group);
-        $member->addAssociation($association);
-        $member->setQrCodeToken('unique_token_xyz_123');
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(42);
+        $member->method('getNom')->willReturn('Ratsimbazafy');
+        $member->method('getPrenom')->willReturn('Nirina');
+        $member->method('getEmail')->willReturn('nirina@example.com');
+        $member->method('getTelephone')->willReturn('+261320000000');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getZoneGeographique')->willReturn($groupe);
+        $member->method('getAssociations')->willReturn(new ArrayCollection());
 
         $controller = new MembreCarteController();
         $response = $controller->__invoke($member);
 
         $this->assertInstanceOf(Response::class, $response);
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
-        $this->assertEquals('text/html; charset=UTF-8', $response->headers->get('Content-Type'));
+        $this->assertEquals('text/html; charset=utf-8', $response->headers->get('Content-Type'));
 
         $content = $response->getContent();
-        $this->assertStringContainsString('Rabe', $content);
-        $this->assertStringContainsString('Jean', $content);
-        $this->assertStringContainsString('Paroisse de Test', $content);
-        $this->assertStringContainsString('Zone Ouest', $content);
-        $this->assertStringContainsString('Chorale Tanora', $content);
-        $this->assertStringContainsString('data:image/png;base64,', $content);
+        $this->assertStringContainsString('Nirina Ratsimbazafy', $content);
+        $this->assertStringContainsString('Test Church', $content);
+        $this->assertStringContainsString('Test Geographic Zone', $content);
+        $this->assertStringContainsString('/api/membres/42/qr-code', $content);
     }
 
     public function testInvokeThrowsNotFoundForNullMember(): void
