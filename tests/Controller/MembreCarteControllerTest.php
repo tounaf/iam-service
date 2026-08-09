@@ -6,11 +6,11 @@ use App\Controller\MembreCarteController;
 use App\Entity\Membre;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
-use App\Entity\Association;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Twig\Environment;
 
 class MembreCarteControllerTest extends TestCase
 {
@@ -32,7 +32,22 @@ class MembreCarteControllerTest extends TestCase
         $member->method('getZoneGeographique')->willReturn($groupe);
         $member->method('getAssociations')->willReturn(new ArrayCollection());
 
-        $controller = new MembreCarteController();
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->with(
+                'membre/carte.html.twig',
+                $this->callback(function ($args) {
+                    return $args['nom'] === 'Ratsimbazafy'
+                        && $args['prenom'] === 'Nirina'
+                        && $args['fiangonanaNom'] === 'Test Church'
+                        && $args['groupeNom'] === 'Test Geographic Zone'
+                        && $args['memberId'] === 42;
+                })
+            )
+            ->willReturn('<html>Nirina Ratsimbazafy - Test Church - Test Geographic Zone - /api/membres/42/qr-code</html>');
+
+        $controller = new MembreCarteController($twig);
         $response = $controller->__invoke($member);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -43,7 +58,6 @@ class MembreCarteControllerTest extends TestCase
         $this->assertStringContainsString('Nirina Ratsimbazafy', $content);
         $this->assertStringContainsString('Test Church', $content);
         $this->assertStringContainsString('Test Geographic Zone', $content);
-        $this->assertStringContainsString('/api/membres/42/qr-code', $content);
     }
 
     public function testInvokeThrowsNotFoundForNullMember(): void
@@ -51,7 +65,8 @@ class MembreCarteControllerTest extends TestCase
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage('Membre non trouvé.');
 
-        $controller = new MembreCarteController();
+        $twig = $this->createMock(Environment::class);
+        $controller = new MembreCarteController($twig);
         $controller->__invoke(null);
     }
 }
