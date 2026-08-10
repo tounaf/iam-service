@@ -83,7 +83,7 @@ class PresenceScanController extends AbstractController
         $nomComplet = $membre->getPrenom() . ' ' . $membre->getNom();
         $fiangonanaNom = $membre->getFiangonana() ? $membre->getFiangonana()->getNom() : 'Paroisse';
 
-        return $this->twig->render('presence/scan_form.html.twig', [
+        return $this->twig->render('presence/form.html.twig', [
             'nomComplet' => $nomComplet,
             'fiangonanaNom' => $fiangonanaNom,
             'error' => $error,
@@ -95,16 +95,16 @@ class PresenceScanController extends AbstractController
         $nomComplet = $membre->getPrenom() . ' ' . $membre->getNom();
         $date = (new \DateTimeImmutable())->format('d/m/Y à H:i');
 
-        return $this->twig->render('presence/scan_success.html.twig', [
+        return $this->twig->render('presence/success.html.twig', [
             'nomComplet' => $nomComplet,
-            'activity' => $activityName,
+            'activityName' => $activityName,
             'date' => $date,
         ]);
     }
 
     private function renderErrorHtml(string $title, string $message): string
     {
-        return $this->twig->render('presence/scan_error.html.twig', [
+        return $this->twig->render('presence/error.html.twig', [
             'title' => $title,
             'message' => $message,
         ]);

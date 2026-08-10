@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fef2f2;
+            color: #991b1b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(153, 27, 27, 0.08);
+            width: 100%;
+            max-width: 440px;
+            padding: 30px 25px;
+            box-sizing: border-box;
+            text-align: center;
+            border-top: 5px solid #ef4444;
+        }
+        .icon {
+            font-size: 50px;
+            color: #ef4444;
+            margin-bottom: 15px;
+        }
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #991b1b;
+            margin: 0 0 10px 0;
+        }
+        .message {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">✗</div>
+        <div class="title">{{ title }}</div>
+        <div class="message">{{ message }}</div>
+    </div>
+</body>
+</html>
