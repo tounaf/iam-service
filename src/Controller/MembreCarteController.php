@@ -13,18 +13,9 @@ use Twig\Environment;
 
 class MembreCarteController extends AbstractController
 {
-<<<<<<< HEAD
     public function __construct(
         private Environment $twig
     ) {}
-=======
-    private Environment $twig;
-
-    public function __construct(Environment $twig)
-    {
-        $this->twig = $twig;
-    }
->>>>>>> origin/refactor-membership-card-and-scans-to-twig-16364982354874027651
 
     #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
     public function __invoke(?Membre $membre): Response
@@ -57,28 +48,10 @@ class MembreCarteController extends AbstractController
         }
         $associationsStr = !empty($associationsList) ? implode(', ', $associationsList) : 'Aucune';
 
-<<<<<<< HEAD
         $nom = $membre->getNom() ?? '';
         $prenom = $membre->getPrenom() ?? '';
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
-
-        // Render the Twig template using injected Twig environment
-        $html = $this->twig->render('membre/carte.html.twig', [
-            'nom' => $nom,
-            'prenom' => $prenom,
-            'fiangonanaNom' => $fiangonanaNom,
-            'groupeNom' => $groupeNom,
-            'associationsStr' => $associationsStr,
-            'email' => $email,
-            'telephone' => $telephone,
-            'qrCodeBase64' => $qrCodeBase64,
-            'membreId' => $membre->getId(),
-=======
-        $nom = htmlspecialchars($membre->getNom() ?? '', ENT_QUOTES, 'UTF-8');
-        $prenom = htmlspecialchars($membre->getPrenom() ?? '', ENT_QUOTES, 'UTF-8');
-        $email = htmlspecialchars($membre->getEmail() ?? '', ENT_QUOTES, 'UTF-8');
-        $telephone = htmlspecialchars($membre->getTelephone() ?? 'Non renseigné', ENT_QUOTES, 'UTF-8');
 
         $html = $this->twig->render('membre/carte.html.twig', [
             'nom' => $nom,
@@ -90,7 +63,6 @@ class MembreCarteController extends AbstractController
             'associationsStr' => $associationsStr,
             'qrCodeBase64' => $qrCodeBase64,
             'memberId' => $membre->getId(),
->>>>>>> origin/refactor-membership-card-and-scans-to-twig-16364982354874027651
         ]);
 
         return new Response(
