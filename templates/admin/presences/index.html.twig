@@ -1,0 +1,67 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Suivi des Présences - Administration Paroissiale{% endblock %}
+{% block header_title %}Suivi des Présences & Activités{% endblock %}
+
+{% block body %}
+<!-- Summary Header -->
+<div class="bg-indigo-900 text-white rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+    <div>
+        <h3 class="text-lg font-bold">Rapport Annuel de Participation</h3>
+        <p class="text-xs text-indigo-200 mt-1">Consultez la présence des membres aux cultes, réunions d'association et séances de formation.</p>
+    </div>
+    <div class="bg-indigo-800 px-5 py-3 rounded-xl border border-indigo-700 text-center">
+        <p class="text-2xl font-extrabold">{{ presences|length }}</p>
+        <p class="text-[10px] text-indigo-300 uppercase tracking-wider font-semibold">Pointages Total</p>
+    </div>
+</div>
+
+<!-- Table of Scan Logs -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="p-6 border-b border-slate-200">
+        <h3 class="text-base font-bold text-slate-800">Historique des Scans de Présence</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                <tr>
+                    <th class="py-3.5 px-6">ID & Date</th>
+                    <th class="py-3.5 px-6">Membre Présent</th>
+                    <th class="py-3.5 px-6">Événement / Activité</th>
+                    <th class="py-3.5 px-6">Scanné Par</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for p in presences %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-4 px-6 text-xs">
+                            <span class="font-bold text-slate-800">#{{ p.id }}</span>
+                            <p class="text-slate-400 mt-0.5">{{ p.scannedAt|date('d/m/Y H:i:s') }}</p>
+                        </td>
+                        <td class="py-4 px-6">
+                            <p class="font-bold text-slate-800">{{ p.membre.prenom }} {{ p.membre.nom }}</p>
+                            <a href="/api/membres/{{ p.membre.id }}/participation-stats" target="_blank" class="text-[11px] text-indigo-600 hover:underline">Voir stats annuelles <i class="fa-solid fa-arrow-right-long text-[9px]"></i></a>
+                        </td>
+                        <td class="py-4 px-6">
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                {{ p.activityName }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 text-xs text-slate-500">
+                            {% if p.scannedBy %}
+                                {{ p.scannedBy.prenom }} {{ p.scannedBy.nom }}
+                            {% else %}
+                                <span class="italic text-slate-400">Scan Autonome</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="py-8 text-center text-slate-400">Aucune donnée de présence enregistrée.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

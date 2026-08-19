@@ -1,0 +1,84 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Gestion des Membres - Administration Paroissiale{% endblock %}
+{% block header_title %}Gestion des Membres{% endblock %}
+
+{% block body %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <!-- Header with Actions -->
+    <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-base font-bold text-slate-800">Liste des Membres Inscrits</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Consultez, modifiez et gérez les cartes membres officielles.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="/admin/membres/nouveau" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
+                <i class="fa-solid fa-plus"></i>
+                <span>Nouveau Membre</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                <tr>
+                    <th class="py-3.5 px-6">ID & Nom</th>
+                    <th class="py-3.5 px-6">Contact</th>
+                    <th class="py-3.5 px-6">Zone / Groupe</th>
+                    <th class="py-3.5 px-6">Paroisse</th>
+                    <th class="py-3.5 px-6 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for m in membres %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-xs font-bold flex items-center justify-center">
+                                    #{{ m.id }}
+                                </span>
+                                <div>
+                                    <p class="font-bold text-slate-800">{{ m.prenom }} {{ m.nom }}</p>
+                                    <p class="text-[11px] text-slate-400 font-mono">Token: {{ m.qrCodeToken|default('N/A') }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-xs">
+                            <p class="font-medium text-slate-700">{{ m.email|default('Non renseigné') }}</p>
+                            <p class="text-slate-400 mt-0.5">{{ m.telephone|default('Non renseigné') }}</p>
+                        </td>
+                        <td class="py-4 px-6 text-xs">
+                            <span class="px-2.5 py-1 rounded-md font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                {{ m.zoneGeographique ? m.zoneGeographique.nom : 'Non spécifiée' }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 text-xs font-medium text-slate-700">
+                            {{ m.fiangonana ? m.fiangonana.nom : 'Paroisse' }}
+                        </td>
+                        <td class="py-4 px-6 text-right space-x-2">
+                            <!-- Carte Membre Printable -->
+                            <a href="/api/membres/{{ m.id }}/carte" target="_blank" title="Imprimer Carte Membre" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition">
+                                <i class="fa-solid fa-id-card"></i>
+                            </a>
+                            <!-- Stats Participation -->
+                            <a href="/api/membres/{{ m.id }}/participation-stats" target="_blank" title="Statistiques de Présence" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </a>
+                            <!-- Editer -->
+                            <a href="/admin/membres/{{ m.id }}/editer" title="Éditer Membre" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-400">Aucun membre enregistré en base de données.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

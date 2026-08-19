@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Administration Paroissiale{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="h-full font-sans antialiased text-slate-800 bg-slate-50">
+
+    <div class="min-h-full flex flex-col lg:flex-row">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full lg:w-64 bg-indigo-900 text-white flex-shrink-0">
+            <div class="p-5 flex items-center justify-between border-b border-indigo-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow">
+                        <i class="fa-solid fa-church"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-sm tracking-wide text-white leading-tight">Gestion Paroisse</h1>
+                        <p class="text-[11px] text-indigo-300">Backoffice Admin</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-4 space-y-1 text-sm font-medium">
+                <a href="/admin/dashboard" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route == 'admin_dashboard' %}bg-indigo-800 text-white font-semibold{% endif %}">
+                    <i class="fa-solid fa-chart-pie w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
+                    Tableau de Bord
+                </a>
+                <a href="/admin/membres" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_membre' %}bg-indigo-800 text-white font-semibold{% endif %}">
+                    <i class="fa-solid fa-users w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
+                    Membres
+                </a>
+                <a href="/admin/presences" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route == 'admin_presences' %}bg-indigo-800 text-white font-semibold{% endif %}">
+                    <i class="fa-solid fa-qrcode w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
+                    Présences & Scans
+                </a>
+                <a href="/api" target="_blank" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group">
+                    <i class="fa-solid fa-code w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
+                    Documentation API
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <!-- Topbar -->
+            <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+                <div class="flex items-center space-x-2">
+                    <h2 class="text-xl font-bold text-slate-800">{% block header_title %}Tableau de Bord{% endblock %}</h2>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3 text-sm">
+                        <span class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center border border-indigo-200">
+                            A
+                        </span>
+                        <div class="hidden sm:block text-right">
+                            <p class="font-semibold text-slate-700 leading-none">Administrateur</p>
+                            <p class="text-xs text-slate-500 mt-1">Paroisse Behoririka</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Container -->
+            <main class="flex-1 p-6 space-y-6">
+                <!-- Flash Messages -->
+                {% for message in app.flashes('success') %}
+                    <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                        <i class="fa-solid fa-circle-check mr-3 text-emerald-500 text-lg"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+
+                {% for message in app.flashes('error') %}
+                    <div class="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                        <i class="fa-solid fa-circle-exclamation mr-3 text-rose-500 text-lg"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+
+                {% block body %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    {% block javascripts %}{% endblock %}
+</body>
+</html>
