@@ -24,6 +24,11 @@ class Evenement
     #[Groups(['evenement:read', 'evenement:write', 'fiangonana:read', 'groupe:read', 'association:read'])]
     private ?string $nom = null;
 
+    #[ORM\ManyToOne(targetEntity: TypeEvenement::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['evenement:read', 'evenement:write', 'fiangonana:read', 'groupe:read', 'association:read'])]
+    private ?TypeEvenement $typeEvenement = null;
+
     #[ORM\Column(type: 'text', nullable: true)]
     #[Groups(['evenement:read', 'evenement:write'])]
     private ?string $description = null;
@@ -77,6 +82,17 @@ class Evenement
     public function setNom(string $nom): self
     {
         $this->nom = $nom;
+        return $this;
+    }
+
+    public function getTypeEvenement(): ?TypeEvenement
+    {
+        return $this->typeEvenement;
+    }
+
+    public function setTypeEvenement(?TypeEvenement $typeEvenement): self
+    {
+        $this->typeEvenement = $typeEvenement;
         return $this;
     }
 

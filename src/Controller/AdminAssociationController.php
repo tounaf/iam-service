@@ -7,6 +7,7 @@ use App\Entity\Evenement;
 use App\Entity\Fiangonana;
 use App\Entity\Presence;
 use App\Entity\RoleAssignment;
+use App\Entity\TypeEvenement;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -58,6 +59,7 @@ class AdminAssociationController extends AbstractController
         }
 
         $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
+        $typesEvenement = $em->getRepository(TypeEvenement::class)->findAll();
 
         return $this->render('admin/associations/form.html.twig', [
             'current_route' => 'admin_association',
@@ -68,6 +70,7 @@ class AdminAssociationController extends AbstractController
             'roleAssignments' => [],
             'events' => [],
             'evenements' => [],
+            'typesEvenement' => $typesEvenement,
         ]);
     }
 
@@ -112,6 +115,7 @@ class AdminAssociationController extends AbstractController
 
         // Fetch explicit created events for this association
         $evenements = $em->getRepository(Evenement::class)->findBy(['association' => $association], ['createdAt' => 'DESC']);
+        $typesEvenement = $em->getRepository(TypeEvenement::class)->findAll();
 
         // Fetch events and presences for members belonging to this association
         $memberIds = array_map(fn($m) => $m->getId(), $membres->toArray());
@@ -146,6 +150,7 @@ class AdminAssociationController extends AbstractController
             'membres' => $membres,
             'roleAssignments' => $roleAssignments,
             'evenements' => $evenements,
+            'typesEvenement' => $typesEvenement,
             'events' => array_values($events),
         ]);
     }
@@ -159,6 +164,7 @@ class AdminAssociationController extends AbstractController
         }
 
         $nom = trim($request->request->get('nom', ''));
+        $typeEvenementId = $request->request->get('type_evenement_id');
         $description = trim($request->request->get('description', ''));
         $lieu = trim($request->request->get('lieu', ''));
 
@@ -171,6 +177,13 @@ class AdminAssociationController extends AbstractController
             $evenement->setLieu($lieu ?: null);
             $evenement->setAssociation($association);
             $evenement->setFiangonana($association->getFiangonana());
+
+            if ($typeEvenementId) {
+                $type = $em->getRepository(TypeEvenement::class)->find($typeEvenementId);
+                if ($type) {
+                    $evenement->setTypeEvenement($type);
+                }
+            }
 
             $em->persist($evenement);
             $em->flush();

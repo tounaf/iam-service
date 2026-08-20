@@ -8,6 +8,7 @@ use App\Entity\Groupe;
 use App\Entity\Membre;
 use App\Entity\Presence;
 use App\Entity\RoleAssignment;
+use App\Entity\TypeEvenement;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -59,6 +60,7 @@ class AdminGroupeController extends AbstractController
         }
 
         $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
+        $typesEvenement = $em->getRepository(TypeEvenement::class)->findAll();
 
         return $this->render('admin/groupes/form.html.twig', [
             'current_route' => 'admin_groupe',
@@ -69,6 +71,7 @@ class AdminGroupeController extends AbstractController
             'roleAssignments' => [],
             'events' => [],
             'evenements' => [],
+            'typesEvenement' => $typesEvenement,
         ]);
     }
 
@@ -113,6 +116,7 @@ class AdminGroupeController extends AbstractController
 
         // Fetch explicit created events for this group
         $evenements = $em->getRepository(Evenement::class)->findBy(['groupe' => $groupe], ['createdAt' => 'DESC']);
+        $typesEvenement = $em->getRepository(TypeEvenement::class)->findAll();
 
         // Fetch events and presences for members of this group
         $presences = $em->getRepository(Presence::class)->createQueryBuilder('p')
@@ -144,6 +148,7 @@ class AdminGroupeController extends AbstractController
             'membres' => $membres,
             'roleAssignments' => $roleAssignments,
             'evenements' => $evenements,
+            'typesEvenement' => $typesEvenement,
             'events' => array_values($events),
         ]);
     }
@@ -157,6 +162,7 @@ class AdminGroupeController extends AbstractController
         }
 
         $nom = trim($request->request->get('nom', ''));
+        $typeEvenementId = $request->request->get('type_evenement_id');
         $description = trim($request->request->get('description', ''));
         $lieu = trim($request->request->get('lieu', ''));
 
@@ -169,6 +175,13 @@ class AdminGroupeController extends AbstractController
             $evenement->setLieu($lieu ?: null);
             $evenement->setGroupe($groupe);
             $evenement->setFiangonana($groupe->getFiangonana());
+
+            if ($typeEvenementId) {
+                $type = $em->getRepository(TypeEvenement::class)->find($typeEvenementId);
+                if ($type) {
+                    $evenement->setTypeEvenement($type);
+                }
+            }
 
             $em->persist($evenement);
             $em->flush();

@@ -155,8 +155,13 @@
                 <h5 class="text-xs font-bold text-indigo-900 uppercase tracking-wider"><i class="fa-solid fa-calendar-plus mr-1"></i> Créer un nouvel événement d'association</h5>
                 <form action="/admin/associations/{{ association.id }}/nouvel-evenement" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <input type="text" name="nom" required placeholder="Nom de l'événement" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <select name="type_evenement_id" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm bg-white">
+                        <option value="">-- Type d'événement --</option>
+                        {% for t in typesEvenement %}
+                            <option value="{{ t.id }}">{{ t.nom }}</option>
+                        {% endfor %}
+                    </select>
                     <input type="text" name="lieu" placeholder="Lieu" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
-                    <input type="text" name="description" placeholder="Description courte" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
                     <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider transition">
                         <i class="fa-solid fa-plus mr-1"></i> Créer l'Événement
                     </button>
@@ -170,7 +175,12 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         {% for ev in evenements %}
                             <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-1">
-                                <p class="text-xs font-bold text-slate-800"><i class="fa-solid fa-calendar-day text-indigo-500 mr-1.5"></i>{{ ev.nom }}</p>
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-bold text-slate-800"><i class="fa-solid fa-calendar-day text-indigo-500 mr-1.5"></i>{{ ev.nom }}</p>
+                                    {% if ev.typeEvenement %}
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700 border border-indigo-100">{{ ev.typeEvenement.nom }}</span>
+                                    {% endif %}
+                                </div>
                                 <p class="text-[11px] text-slate-500"><i class="fa-solid fa-location-dot mr-1"></i>Lieu: {{ ev.lieu|default('Non spécifié') }}</p>
                                 <p class="text-[10px] text-slate-400 font-mono">Créé le {{ ev.createdAt|date('d/m/Y') }}</p>
                             </div>
