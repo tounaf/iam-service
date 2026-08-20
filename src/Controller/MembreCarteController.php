@@ -56,7 +56,6 @@ class MembreCarteController extends AbstractController
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
 
-        // Render the Twig template using injected Twig environment
         $html = $this->twig->render('membre/carte.html.twig', [
             'nom' => $nom,
             'prenom' => $prenom,

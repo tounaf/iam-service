@@ -111,38 +111,6 @@
                 </div>
             </div>
 
-            <!-- QR Code Section -->
-            {% if isEdit and membre %}
-                <div class="pt-6 border-t border-slate-100">
-                    <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Gestion du Code QR Unique</h4>
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        {% if membre.qrCodeToken %}
-                            <!-- QR Code Generated Display -->
-                            <div class="flex items-center space-x-4">
-                                <img src="/api/membres/{{ membre.id }}/qr-code" alt="Code QR Membre" class="w-24 h-28 border border-slate-200 rounded-xl bg-white p-1">
-                                <div>
-                                    <p class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md inline-block border border-emerald-100 mb-1"><i class="fa-solid fa-check-circle mr-1"></i> Code QR Généré & Actif</p>
-                                    <p class="text-xs text-slate-500 font-mono">Jeton : {{ membre.qrCodeToken }}</p>
-                                    <p class="text-[11px] text-slate-400 mt-0.5">Scannable lors des cultes, formations des jeunes et événements.</p>
-                                </div>
-                            </div>
-                        {% else %}
-                            <!-- Generate QR Code Button -->
-                            <div>
-                                <p class="text-xs font-semibold text-slate-700">Aucun code QR unique attribué à ce membre.</p>
-                                <p class="text-[11px] text-slate-400">Générez un jeton sécurisé pour permettre le pointage aux événements.</p>
-                            </div>
-                            <form method="POST" action="/admin/membres/{{ membre.id }}/generate-qrcode">
-                                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
-                                    <i class="fa-solid fa-qrcode"></i>
-                                    <span>Générer le Code QR</span>
-                                </button>
-                            </form>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endif %}
-
             <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
                 <a href="/admin/membres" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Annuler</a>
                 <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-sm">
@@ -150,6 +118,38 @@
                 </button>
             </div>
         </form>
+
+        <!-- QR Code Section Outside Main Info Form -->
+        {% if isEdit and membre %}
+            <div class="pt-6 border-t border-slate-100">
+                <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Gestion du Code QR Unique</h4>
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    {% if membre.qrCodeToken %}
+                        <!-- QR Code Generated Display -->
+                        <div class="flex items-center space-x-4">
+                            <img src="/api/membres/{{ membre.id }}/qr-code" alt="Code QR Membre" class="w-24 h-28 border border-slate-200 rounded-xl bg-white p-1">
+                            <div>
+                                <p class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md inline-block border border-emerald-100 mb-1"><i class="fa-solid fa-check-circle mr-1"></i> Code QR Généré & Actif</p>
+                                <p class="text-xs text-slate-500 font-mono">Jeton : {{ membre.qrCodeToken }}</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Scannable lors des cultes, formations des jeunes et événements.</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Generate QR Code Button -->
+                        <div>
+                            <p class="text-xs font-semibold text-slate-700">Aucun code QR unique attribué à ce membre.</p>
+                            <p class="text-[11px] text-slate-400">Générez un jeton sécurisé pour permettre le pointage aux événements.</p>
+                        </div>
+                        <form method="POST" action="/admin/membres/{{ membre.id }}/generate-qrcode">
+                            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
+                                <i class="fa-solid fa-qrcode"></i>
+                                <span>Générer le Code QR</span>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
     </div>
 
     {% if isEdit and membre %}

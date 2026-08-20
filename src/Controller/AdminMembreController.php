@@ -133,6 +133,26 @@ class AdminMembreController extends AbstractController
 
                     $this->addFlash('success', sprintf('Rôle "%s" attribué à %s.', $role->getName(), $membre->getPrenom()));
                 }
+            } elseif ($action === 'update_associations') {
+                $associationIds = $request->request->all('association_ids');
+
+                // Clear current associations
+                foreach ($membre->getAssociations() as $existingAssoc) {
+                    $membre->removeAssociation($existingAssoc);
+                }
+
+                if (!empty($associationIds)) {
+                    foreach ($associationIds as $assocId) {
+                        $assoc = $em->getRepository(Association::class)->find($assocId);
+                        if ($assoc) {
+                            $membre->addAssociation($assoc);
+                        }
+                    }
+                }
+
+                $em->flush();
+
+                $this->addFlash('success', sprintf('Associations de %s mises à jour avec succès !', $membre->getPrenom()));
             } else {
                 $nom = trim($request->request->get('nom', ''));
                 $prenom = trim($request->request->get('prenom', ''));
@@ -141,7 +161,6 @@ class AdminMembreController extends AbstractController
                 $photoUrl = trim($request->request->get('photoUrl', ''));
                 $groupeId = $request->request->get('groupe_id');
                 $fiangonanaId = $request->request->get('fiangonana_id');
-                $associationIds = $request->request->all('association_ids');
 
                 $membre->setNom($nom);
                 $membre->setPrenom($prenom);
@@ -159,19 +178,6 @@ class AdminMembreController extends AbstractController
                 if ($fiangonanaId) {
                     $fiangonana = $em->getRepository(Fiangonana::class)->find($fiangonanaId);
                     $membre->setFiangonana($fiangonana);
-                }
-
-                // Update Associations
-                foreach ($membre->getAssociations() as $existingAssoc) {
-                    $membre->removeAssociation($existingAssoc);
-                }
-                if (!empty($associationIds)) {
-                    foreach ($associationIds as $assocId) {
-                        $assoc = $em->getRepository(Association::class)->find($assocId);
-                        if ($assoc) {
-                            $membre->addAssociation($assoc);
-                        }
-                    }
                 }
 
                 $em->flush();
