@@ -20,17 +20,57 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 class AdminEntitiesControllerTest extends TestCase
 {
-    public function testFiangonanaEditRendersFourTabsData(): void
+    private function createMockContainer(): ContainerInterface
+    {
+        $container = $this->createMock(ContainerInterface::class);
+
+        $container->method('has')->with('request_stack')->willReturn(true);
+        $container->method('get')->willReturnCallback(function ($id) {
+            if ($id === 'request_stack') {
+                $requestStack = new \Symfony\Component\HttpFoundation\RequestStack();
+                $session = new Session(new MockArraySessionStorage());
+                $request = new Request();
+                $request->setSession($session);
+                $requestStack->push($request);
+                return $requestStack;
+            }
+            if ($id === 'router') {
+                $router = $this->createMock(\Symfony\Component\Routing\Generator\UrlGeneratorInterface::class);
+                $router->method('generate')->willReturnCallback(function ($name, $params = []) {
+                    return '/admin/fiangonana/' . ($params['id'] ?? 1) . '/editer?tab=' . ($params['tab'] ?? '');
+                });
+                return $router;
+            }
+            return null;
+        });
+
+        return $container;
+    }
+
+    public function testFiangonanaEditRendersAllTabsData(): void
     {
         $fiangonana = new Fiangonana();
         $fiangonana->setNom('Paroisse Ambohitantely');
         $fiangonana->setCode('AMB');
+
+        $groupe = new Groupe();
+        $groupe->setNom('Zone 1');
+        $groupe->setFiangonana($fiangonana);
+        $fiangonana->getGroupes()->add($groupe);
+
+        $association = new Association();
+        $association->setNom('STK');
+        $association->setFiangonana($fiangonana);
+        $fiangonana->getAssociations()->add($association);
 
         $membre = new Membre();
         $membre->setNom('Rakoto');
@@ -82,10 +122,63 @@ class AdminEntitiesControllerTest extends TestCase
         });
 
         $controller = new AdminFiangonanaController();
-        // Test entity retrieval and array mapping
-        $request = Request::create('/admin/fiangonana/1/editer', 'GET');
-
         $this->assertInstanceOf(AdminFiangonanaController::class, $controller);
+        $this->assertCount(1, $fiangonana->getGroupes());
+        $this->assertCount(1, $fiangonana->getAssociations());
+    }
+
+    public function testFiangonanaAddGroupeDirectly(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse Ambohitantely');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $fiangonanaRepo = $this->createMock(EntityRepository::class);
+        $fiangonanaRepo->method('find')->with(1)->willReturn($fiangonana);
+
+        $em->method('getRepository')->with(Fiangonana::class)->willReturn($fiangonanaRepo);
+        $em->expects($this->once())->method('persist')->with($this::isInstanceOf(Groupe::class));
+        $em->expects($this->once())->method('flush');
+
+        $controller = new AdminFiangonanaController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/fiangonana/1/nouveau-groupe', 'POST', [
+            'nom' => 'Zone Sud',
+            'description' => 'Secteur sud'
+        ]);
+
+        $response = $controller->addGroupe(1, $request, $em);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertStringContainsString('/admin/fiangonana/1/editer', $response->getTargetUrl());
+    }
+
+    public function testFiangonanaAddAssociationDirectly(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse Ambohitantely');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $fiangonanaRepo = $this->createMock(EntityRepository::class);
+        $fiangonanaRepo->method('find')->with(1)->willReturn($fiangonana);
+
+        $em->method('getRepository')->with(Fiangonana::class)->willReturn($fiangonanaRepo);
+        $em->expects($this->once())->method('persist')->with($this::isInstanceOf(Association::class));
+        $em->expects($this->once())->method('flush');
+
+        $controller = new AdminFiangonanaController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/fiangonana/1/nouvelle-association', 'POST', [
+            'nom' => 'Sampana Vehivavy (VFL)',
+            'description' => 'Association des femmes'
+        ]);
+
+        $response = $controller->addAssociation(1, $request, $em);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertStringContainsString('/admin/fiangonana/1/editer', $response->getTargetUrl());
     }
 
     public function testGroupeEditRendersFourTabsData(): void

@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\Association;
 use App\Entity\Fiangonana;
+use App\Entity\Groupe;
 use App\Entity\Membre;
 use App\Entity\Presence;
 use App\Entity\RoleAssignment;
@@ -54,6 +56,8 @@ class AdminFiangonanaController extends AbstractController
             'isEdit' => false,
             'fiangonana' => null,
             'membres' => [],
+            'groupes' => [],
+            'associations' => [],
             'roleAssignments' => [],
             'events' => [],
         ]);
@@ -88,6 +92,10 @@ class AdminFiangonanaController extends AbstractController
         // Fetch members of this parish
         $membres = $em->getRepository(Membre::class)->findBy(['fiangonana' => $fiangonana], ['id' => 'DESC']);
 
+        // Fetch groups and associations attached to this parish
+        $groupes = $fiangonana->getGroupes();
+        $associations = $fiangonana->getAssociations();
+
         // Fetch committee/bureau roles in parish context
         $roleAssignments = $em->getRepository(RoleAssignment::class)->findBy(['fiangonanaContext' => $fiangonana, 'isActive' => true]);
 
@@ -118,9 +126,67 @@ class AdminFiangonanaController extends AbstractController
             'isEdit' => true,
             'fiangonana' => $fiangonana,
             'membres' => $membres,
+            'groupes' => $groupes,
+            'associations' => $associations,
             'roleAssignments' => $roleAssignments,
             'events' => array_values($events),
         ]);
+    }
+
+    #[Route('/admin/fiangonana/{id}/nouveau-groupe', name: 'admin_fiangonana_add_groupe', methods: ['POST'])]
+    public function addGroupe(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $fiangonana = $em->getRepository(Fiangonana::class)->find($id);
+        if (!$fiangonana) {
+            throw new NotFoundHttpException('Paroisse introuvable.');
+        }
+
+        $nom = trim($request->request->get('nom', ''));
+        $description = trim($request->request->get('description', ''));
+
+        if ($nom === '') {
+            $this->addFlash('error', 'Le nom de la zone / groupe est obligatoire.');
+        } else {
+            $groupe = new Groupe();
+            $groupe->setNom($nom);
+            $groupe->setDescription($description ?: null);
+            $groupe->setFiangonana($fiangonana);
+
+            $em->persist($groupe);
+            $em->flush();
+
+            $this->addFlash('success', sprintf('Zone / Groupe "%s" ajouté à la paroisse avec succès !', $nom));
+        }
+
+        return $this->redirectToRoute('admin_fiangonana_edit', ['id' => $fiangonana->getId(), 'tab' => 'groupes']);
+    }
+
+    #[Route('/admin/fiangonana/{id}/nouvelle-association', name: 'admin_fiangonana_add_association', methods: ['POST'])]
+    public function addAssociation(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $fiangonana = $em->getRepository(Fiangonana::class)->find($id);
+        if (!$fiangonana) {
+            throw new NotFoundHttpException('Paroisse introuvable.');
+        }
+
+        $nom = trim($request->request->get('nom', ''));
+        $description = trim($request->request->get('description', ''));
+
+        if ($nom === '') {
+            $this->addFlash('error', 'Le nom de l\'association est obligatoire.');
+        } else {
+            $association = new Association();
+            $association->setNom($nom);
+            $association->setDescription($description ?: null);
+            $association->setFiangonana($fiangonana);
+
+            $em->persist($association);
+            $em->flush();
+
+            $this->addFlash('success', sprintf('Association "%s" ajoutée à la paroisse avec succès !', $nom));
+        }
+
+        return $this->redirectToRoute('admin_fiangonana_edit', ['id' => $fiangonana->getId(), 'tab' => 'associations']);
     }
 
     #[Route('/admin/fiangonana/{id}/supprimer', name: 'admin_fiangonana_delete', methods: ['POST'])]

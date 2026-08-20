@@ -4,7 +4,7 @@
 {% block header_title %}{{ isEdit ? 'Fiche Paroisse (Fiangonana)' : 'Création d\'une Nouvelle Paroisse' }}{% endblock %}
 
 {% block body %}
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
 
     {% if isEdit and fiangonana %}
         <!-- Header Parish Banner -->
@@ -18,26 +18,38 @@
                         <h2 class="text-2xl font-extrabold text-slate-800">{{ fiangonana.nom }}</h2>
                         <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">Code: {{ fiangonana.code }}</span>
                     </div>
-                    <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-users mr-1"></i> {{ membres|length }} membre(s) inscrit(s) au total</p>
+                    <div class="flex items-center space-x-4 text-xs text-slate-500 mt-2">
+                        <span><i class="fa-solid fa-users text-indigo-500 mr-1"></i> {{ membres|length }} membre(s)</span>
+                        <span><i class="fa-solid fa-map-location-dot text-indigo-500 mr-1"></i> {{ groupes|length }} zone(s) / groupe(s)</span>
+                        <span><i class="fa-solid fa-people-group text-indigo-500 mr-1"></i> {{ associations|length }} association(s)</span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Tab Navigation Bar -->
-        <div class="border-b border-slate-200 flex space-x-4 text-sm font-semibold">
-            <button onclick="switchTab('tab-general')" id="tab-btn-general" class="tab-link pb-3 border-b-2 border-indigo-600 text-indigo-600 flex items-center space-x-2 transition">
+        <div class="border-b border-slate-200 flex flex-wrap gap-2 text-sm font-semibold">
+            <button onclick="switchTab('tab-general')" id="tab-btn-general" class="tab-link pb-3 border-b-2 border-indigo-600 text-indigo-600 flex items-center space-x-2 transition px-2">
                 <i class="fa-solid fa-circle-info"></i>
                 <span>Informations Générales</span>
             </button>
-            <button onclick="switchTab('tab-membres')" id="tab-btn-membres" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition">
+            <button onclick="switchTab('tab-groupes')" id="tab-btn-groupes" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition px-2">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>Zones & Groupes ({{ groupes|length }})</span>
+            </button>
+            <button onclick="switchTab('tab-associations')" id="tab-btn-associations" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition px-2">
+                <i class="fa-solid fa-people-group"></i>
+                <span>Associations ({{ associations|length }})</span>
+            </button>
+            <button onclick="switchTab('tab-membres')" id="tab-btn-membres" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition px-2">
                 <i class="fa-solid fa-users"></i>
                 <span>Membres Inscrits ({{ membres|length }})</span>
             </button>
-            <button onclick="switchTab('tab-comites')" id="tab-btn-comites" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition">
+            <button onclick="switchTab('tab-comites')" id="tab-btn-comites" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition px-2">
                 <i class="fa-solid fa-user-gear"></i>
                 <span>Bureau & Comités ({{ roleAssignments|length }})</span>
             </button>
-            <button onclick="switchTab('tab-events')" id="tab-btn-events" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition">
+            <button onclick="switchTab('tab-events')" id="tab-btn-events" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition px-2">
                 <i class="fa-solid fa-calendar-days"></i>
                 <span>Événements & Présences ({{ events|length }})</span>
             </button>
@@ -67,7 +79,107 @@
     </div>
 
     {% if isEdit and fiangonana %}
-        <!-- TAB 2: Members List -->
+        <!-- TAB 2: Zones & Groups -->
+        <div id="tab-groupes" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Zones Geographiques & Groupes</h4>
+                    <p class="text-xs text-slate-500 mt-1">Gérer les zones de la paroisse {{ fiangonana.nom }}</p>
+                </div>
+            </div>
+
+            <!-- Add Groupe Form -->
+            <div class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-5 space-y-3">
+                <h5 class="text-xs font-bold text-indigo-900 uppercase tracking-wider"><i class="fa-solid fa-plus-circle mr-1"></i> Ajouter une nouvelle zone / groupe</h5>
+                <form action="/admin/fiangonana/{{ fiangonana.id }}/nouveau-groupe" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="text" name="nom" required placeholder="Nom du groupe (ex: Zone Nord)" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <input type="text" name="description" placeholder="Description courte (optionnel)" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider transition">
+                        <i class="fa-solid fa-plus mr-1"></i> Ajouter la Zone
+                    </button>
+                </form>
+            </div>
+
+            <!-- List of Groupes -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                        <tr>
+                            <th class="py-3.5 px-6">ID & Nom</th>
+                            <th class="py-3.5 px-6">Description</th>
+                            <th class="py-3.5 px-6 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for g in groupes %}
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-4 px-6 font-bold text-slate-800">#{{ g.id }} - {{ g.nom }}</td>
+                                <td class="py-4 px-6 text-xs text-slate-500">{{ g.description|default('Aucune description') }}</td>
+                                <td class="py-4 px-6 text-right">
+                                    <a href="/admin/groupes/{{ g.id }}/editer" class="text-indigo-600 hover:underline font-semibold text-xs"><i class="fa-solid fa-pen-to-square"></i> Consulter & Éditer</a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="py-6 text-center text-slate-400">Aucune zone ou groupe enregistré dans cette paroisse.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: Associations -->
+        <div id="tab-associations" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Associations Paroissiales</h4>
+                    <p class="text-xs text-slate-500 mt-1">Gérer les associations (STK, Dorkasy, VFL, etc.) de {{ fiangonana.nom }}</p>
+                </div>
+            </div>
+
+            <!-- Add Association Form -->
+            <div class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-5 space-y-3">
+                <h5 class="text-xs font-bold text-indigo-900 uppercase tracking-wider"><i class="fa-solid fa-plus-circle mr-1"></i> Ajouter une nouvelle association</h5>
+                <form action="/admin/fiangonana/{{ fiangonana.id }}/nouvelle-association" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="text" name="nom" required placeholder="Nom de l'association (ex: Sampana Tanora)" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <input type="text" name="description" placeholder="Description courte (optionnel)" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider transition">
+                        <i class="fa-solid fa-plus mr-1"></i> Ajouter l'Association
+                    </button>
+                </form>
+            </div>
+
+            <!-- List of Associations -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                        <tr>
+                            <th class="py-3.5 px-6">ID & Nom</th>
+                            <th class="py-3.5 px-6">Description</th>
+                            <th class="py-3.5 px-6 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for a in associations %}
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-4 px-6 font-bold text-slate-800">#{{ a.id }} - {{ a.nom }}</td>
+                                <td class="py-4 px-6 text-xs text-slate-500">{{ a.description|default('Aucune description') }}</td>
+                                <td class="py-4 px-6 text-right">
+                                    <a href="/admin/associations/{{ a.id }}/editer" class="text-indigo-600 hover:underline font-semibold text-xs"><i class="fa-solid fa-pen-to-square"></i> Consulter & Éditer</a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="py-6 text-center text-slate-400">Aucune association enregistrée dans cette paroisse.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: Members List -->
         <div id="tab-membres" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-4">
             <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Liste des Membres de la Paroisse</h4>
             <div class="overflow-x-auto">
@@ -100,7 +212,7 @@
             </div>
         </div>
 
-        <!-- TAB 3: Committee & Bureau (CRBAC Roles) -->
+        <!-- TAB 5: Committee & Bureau (CRBAC Roles) -->
         <div id="tab-comites" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-4">
             <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Membres du Bureau & Comités (Président, Secrétaire, Trésorier...)</h4>
             <div class="overflow-x-auto">
@@ -129,7 +241,7 @@
             </div>
         </div>
 
-        <!-- TAB 4: Events & Presences -->
+        <!-- TAB 6: Events & Presences -->
         <div id="tab-events" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
             <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Événements (Formations, Asa, Cultes) & Présences</h4>
             {% for event in events %}
@@ -164,13 +276,26 @@
             el.classList.add('border-transparent', 'text-slate-500');
         });
 
-        document.getElementById(tabId).classList.remove('hidden');
+        const activeContent = document.getElementById(tabId);
+        if (activeContent) {
+            activeContent.classList.remove('hidden');
+        }
+
         const btn = document.getElementById('tab-btn-' + tabId.replace('tab-', ''));
         if (btn) {
             btn.classList.remove('border-transparent', 'text-slate-500');
             btn.classList.add('border-indigo-600', 'text-indigo-600');
         }
     }
+
+    // Auto-switch to tab if query parameter tab=... is set
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab) {
+            switchTab('tab-' + tab);
+        }
+    });
 </script>
 {% endblock %}
 {% endblock %}
