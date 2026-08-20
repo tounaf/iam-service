@@ -135,7 +135,7 @@ class AdminEntitiesControllerTest extends TestCase
         $this->assertCount(1, $fiangonana->getAssociations());
     }
 
-    public function testFiangonanaAddEvenementWithType(): void
+    public function testFiangonanaAddEvenementWithTypeAndDates(): void
     {
         $fiangonana = new Fiangonana();
         $fiangonana->setNom('Paroisse Ambohitantely');
@@ -159,7 +159,10 @@ class AdminEntitiesControllerTest extends TestCase
         });
 
         $em->expects($this->once())->method('persist')->with($this->callback(function ($ev) use ($typeEvenement) {
-            return $ev instanceof Evenement && $ev->getTypeEvenement() === $typeEvenement;
+            return $ev instanceof Evenement
+                && $ev->getTypeEvenement() === $typeEvenement
+                && $ev->getDateDebut() !== null
+                && $ev->getDateFin() !== null;
         }));
         $em->expects($this->once())->method('flush');
 
@@ -169,6 +172,8 @@ class AdminEntitiesControllerTest extends TestCase
         $request = Request::create('/admin/fiangonana/1/nouvel-evenement', 'POST', [
             'nom' => 'Culte de Pentecôte 2026',
             'type_evenement_id' => 2,
+            'date_debut' => '2026-05-24T09:00',
+            'date_fin' => '2026-05-24T12:00',
             'lieu' => 'Temple Principal',
             'description' => 'Culte spécial'
         ]);

@@ -163,6 +163,8 @@ class AdminGroupeController extends AbstractController
 
         $nom = trim($request->request->get('nom', ''));
         $typeEvenementId = $request->request->get('type_evenement_id');
+        $dateDebutStr = $request->request->get('date_debut');
+        $dateFinStr = $request->request->get('date_fin');
         $description = trim($request->request->get('description', ''));
         $lieu = trim($request->request->get('lieu', ''));
 
@@ -175,6 +177,20 @@ class AdminGroupeController extends AbstractController
             $evenement->setLieu($lieu ?: null);
             $evenement->setGroupe($groupe);
             $evenement->setFiangonana($groupe->getFiangonana());
+
+            if ($dateDebutStr) {
+                try {
+                    $evenement->setDateDebut(new \DateTime($dateDebutStr));
+                } catch (\Exception $e) {
+                }
+            }
+
+            if ($dateFinStr) {
+                try {
+                    $evenement->setDateFin(new \DateTime($dateFinStr));
+                } catch (\Exception $e) {
+                }
+            }
 
             if ($typeEvenementId) {
                 $type = $em->getRepository(TypeEvenement::class)->find($typeEvenementId);
