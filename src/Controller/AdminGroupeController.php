@@ -4,6 +4,9 @@ namespace App\Controller;
 
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
+use App\Entity\Membre;
+use App\Entity\Presence;
+use App\Entity\RoleAssignment;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -61,6 +64,9 @@ class AdminGroupeController extends AbstractController
             'isEdit' => false,
             'groupe' => null,
             'fiangonanas' => $fiangonanas,
+            'membres' => [],
+            'roleAssignments' => [],
+            'events' => [],
         ]);
     }
 
@@ -90,18 +96,49 @@ class AdminGroupeController extends AbstractController
 
                     $this->addFlash('success', sprintf('Groupe / Zone "%s" mis à jour avec succès !', $nom));
 
-                    return $this->redirectToRoute('admin_groupe_index');
+                    return $this->redirectToRoute('admin_groupe_edit', ['id' => $groupe->getId()]);
                 }
             }
         }
 
         $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
 
+        // Fetch members belonging to this group
+        $membres = $em->getRepository(Membre::class)->findBy(['zoneGeographique' => $groupe], ['id' => 'DESC']);
+
+        // Fetch committee/bureau roles in group context
+        $roleAssignments = $em->getRepository(RoleAssignment::class)->findBy(['groupeContext' => $groupe, 'isActive' => true]);
+
+        // Fetch events and presences for members of this group
+        $presences = $em->getRepository(Presence::class)->createQueryBuilder('p')
+            ->join('p.membre', 'm')
+            ->where('m.zoneGeographique = :groupe')
+            ->setParameter('groupe', $groupe)
+            ->orderBy('p.scannedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        // Group presences by event/activity name
+        $events = [];
+        foreach ($presences as $p) {
+            $act = $p->getActivityName();
+            if (!isset($events[$act])) {
+                $events[$act] = [
+                    'name' => $act,
+                    'presences' => []
+                ];
+            }
+            $events[$act]['presences'][] = $p;
+        }
+
         return $this->render('admin/groupes/form.html.twig', [
             'current_route' => 'admin_groupe',
             'isEdit' => true,
             'groupe' => $groupe,
             'fiangonanas' => $fiangonanas,
+            'membres' => $membres,
+            'roleAssignments' => $roleAssignments,
+            'events' => array_values($events),
         ]);
     }
 

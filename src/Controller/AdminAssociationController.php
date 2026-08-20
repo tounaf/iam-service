@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Entity\Association;
 use App\Entity\Fiangonana;
+use App\Entity\Presence;
+use App\Entity\RoleAssignment;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -61,6 +63,9 @@ class AdminAssociationController extends AbstractController
             'isEdit' => false,
             'association' => null,
             'fiangonanas' => $fiangonanas,
+            'membres' => [],
+            'roleAssignments' => [],
+            'events' => [],
         ]);
     }
 
@@ -90,18 +95,52 @@ class AdminAssociationController extends AbstractController
 
                     $this->addFlash('success', sprintf('Association "%s" mise à jour avec succès !', $nom));
 
-                    return $this->redirectToRoute('admin_association_index');
+                    return $this->redirectToRoute('admin_association_edit', ['id' => $association->getId()]);
                 }
             }
         }
 
         $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
 
+        // Fetch members belonging to this association
+        $membres = $association->getMembres();
+
+        // Fetch committee/bureau roles in association context
+        $roleAssignments = $em->getRepository(RoleAssignment::class)->findBy(['associationContext' => $association, 'isActive' => true]);
+
+        // Fetch events and presences for members belonging to this association
+        $memberIds = array_map(fn($m) => $m->getId(), $membres->toArray());
+        $presences = [];
+        if (!empty($memberIds)) {
+            $presences = $em->getRepository(Presence::class)->createQueryBuilder('p')
+                ->where('p.membre IN (:memberIds)')
+                ->setParameter('memberIds', $memberIds)
+                ->orderBy('p.scannedAt', 'DESC')
+                ->getQuery()
+                ->getResult();
+        }
+
+        // Group presences by event/activity name
+        $events = [];
+        foreach ($presences as $p) {
+            $act = $p->getActivityName();
+            if (!isset($events[$act])) {
+                $events[$act] = [
+                    'name' => $act,
+                    'presences' => []
+                ];
+            }
+            $events[$act]['presences'][] = $p;
+        }
+
         return $this->render('admin/associations/form.html.twig', [
             'current_route' => 'admin_association',
             'isEdit' => true,
             'association' => $association,
             'fiangonanas' => $fiangonanas,
+            'membres' => $membres,
+            'roleAssignments' => $roleAssignments,
+            'events' => array_values($events),
         ]);
     }
 

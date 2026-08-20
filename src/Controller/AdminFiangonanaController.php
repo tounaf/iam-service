@@ -3,6 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Fiangonana;
+use App\Entity\Membre;
+use App\Entity\Presence;
+use App\Entity\RoleAssignment;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -50,6 +53,9 @@ class AdminFiangonanaController extends AbstractController
             'current_route' => 'admin_fiangonana',
             'isEdit' => false,
             'fiangonana' => null,
+            'membres' => [],
+            'roleAssignments' => [],
+            'events' => [],
         ]);
     }
 
@@ -75,14 +81,45 @@ class AdminFiangonanaController extends AbstractController
 
                 $this->addFlash('success', sprintf('Paroisse "%s" mise à jour avec succès !', $nom));
 
-                return $this->redirectToRoute('admin_fiangonana_index');
+                return $this->redirectToRoute('admin_fiangonana_edit', ['id' => $fiangonana->getId()]);
             }
+        }
+
+        // Fetch members of this parish
+        $membres = $em->getRepository(Membre::class)->findBy(['fiangonana' => $fiangonana], ['id' => 'DESC']);
+
+        // Fetch committee/bureau roles in parish context
+        $roleAssignments = $em->getRepository(RoleAssignment::class)->findBy(['fiangonanaContext' => $fiangonana, 'isActive' => true]);
+
+        // Fetch events and presences for members of this parish
+        $presences = $em->getRepository(Presence::class)->createQueryBuilder('p')
+            ->join('p.membre', 'm')
+            ->where('m.fiangonana = :fiangonana')
+            ->setParameter('fiangonana', $fiangonana)
+            ->orderBy('p.scannedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        // Group presences by event/activity name
+        $events = [];
+        foreach ($presences as $p) {
+            $act = $p->getActivityName();
+            if (!isset($events[$act])) {
+                $events[$act] = [
+                    'name' => $act,
+                    'presences' => []
+                ];
+            }
+            $events[$act]['presences'][] = $p;
         }
 
         return $this->render('admin/fiangonana/form.html.twig', [
             'current_route' => 'admin_fiangonana',
             'isEdit' => true,
             'fiangonana' => $fiangonana,
+            'membres' => $membres,
+            'roleAssignments' => $roleAssignments,
+            'events' => array_values($events),
         ]);
     }
 

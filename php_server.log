@@ -1,0 +1,16 @@
+[Thu Aug 20 07:54:05 2026] PHP 8.3.6 Development Server (http://127.0.0.1:8000) started
+[Thu Aug 20 07:54:07 2026] 127.0.0.1:33390 Accepted
+[Thu Aug 20 07:54:07 2026] 127.0.0.1:33390 [500]: HEAD /admin/fiangonana/1/editer
+[Thu Aug 20 07:54:07 2026] 127.0.0.1:33390 Closing
+[Thu Aug 20 07:54:24 2026] 127.0.0.1:48436 Accepted
+[Thu Aug 20 07:54:24 2026] 127.0.0.1:48436 [200]: HEAD /admin/fiangonana/1/editer
+[Thu Aug 20 07:54:24 2026] 127.0.0.1:48436 Closing
+[Thu Aug 20 07:54:56 2026] 127.0.0.1:50112 Accepted
+[Thu Aug 20 07:54:56 2026] 127.0.0.1:50112 [200]: GET /admin/fiangonana/1/editer
+[Thu Aug 20 07:54:56 2026] 127.0.0.1:50112 Closing
+[Thu Aug 20 07:54:56 2026] 127.0.0.1:50126 Accepted
+[Thu Aug 20 07:54:56 2026] 127.0.0.1:50126 [200]: GET /_wdt/styles
+[Thu Aug 20 07:54:56 2026] 127.0.0.1:50126 Closing
+[Thu Aug 20 07:54:57 2026] 127.0.0.1:50142 Accepted
+[Thu Aug 20 07:54:57 2026] 127.0.0.1:50142 [200]: GET /_wdt/f3a1fe?XDEBUG_IGNORE=1
+[Thu Aug 20 07:54:57 2026] 127.0.0.1:50142 Closing
