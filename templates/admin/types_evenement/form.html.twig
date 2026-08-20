@@ -1,0 +1,34 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}{{ isEdit ? 'Éditer le Type d\'Événement' : 'Nouveau Type d\'Événement' }} - Administration{% endblock %}
+{% block header_title %}{{ isEdit ? 'Édition du Type d\'Événement' : 'Création d\'un Type d\'Événement' }}{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
+
+    <form method="POST" class="space-y-5">
+        <div>
+            <label for="nom" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Nom du Type d'Événement *</label>
+            <input type="text" id="nom" name="nom" value="{{ typeEvenement ? typeEvenement.nom : '' }}" required placeholder="Ex: Formation des Jeunes, Culte, Retraite..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
+        </div>
+
+        <div>
+            <label for="code" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Code Unique (Optionnel)</label>
+            <input type="text" id="code" name="code" value="{{ typeEvenement ? typeEvenement.code : '' }}" placeholder="Ex: FORM_JEUNES" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm font-mono uppercase">
+        </div>
+
+        <div>
+            <label for="description" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Description</label>
+            <textarea id="description" name="description" rows="3" placeholder="Description courte des caractéristiques de cette catégorie d'événement..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">{{ typeEvenement ? typeEvenement.description : '' }}</textarea>
+        </div>
+
+        <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
+            <a href="/admin/types-evenement" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Annuler</a>
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-sm">
+                {{ isEdit ? 'Enregistrer les Modifications' : 'Créer le Type' }}
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

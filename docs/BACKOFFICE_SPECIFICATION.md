@@ -9,7 +9,7 @@ Ce document décrit l'architecture, les fonctionnalités et la carte des routes 
 L'administration backoffice (`/admin`) offre un espace de gestion centralisé, moderne et sécurisé réservé aux dirigeants, secrétaires et responsables d'associations. Elle permet de :
 * Suivre en temps réel les effectifs et indicateurs clés de la paroisse (`Fiangonana`), des zones géographiques (`Groupe`) et des associations.
 * Gérer la paroisse (`Fiangonana`) et y rattacher / afficher directement ses **Zones & Groupes** et ses **Associations**.
-* Gérer les **Types d'Événements** (`TypeEvenement` : Cultes, Formations des Jeunes, Asa, Réunions) et créer des **Événements** (`Evenement`) typés pour chaque Paroisse, Groupe/Zone ou Association.
+* Gérer la liste dédiée des **Types d'Événements** (`TypeEvenement` : création, édition, suppression de catégories d'activités comme les Cultes, Formations, Asa, Réunions, Retraites) et attribuer un type lors de la création d'un **Événement** (`Evenement`).
 * Inscrire et éditer les fiches des membres avec support de **téléchargement Glisser-Déposer (Drag-and-Drop)** pour la photo de profil.
 * Générer et imprimer les cartes d'identité membres officielles avec QR Code unique.
 * Consulter les statistiques d'assiduité, les rapports d'activités et les taux de participation annuels.
@@ -42,7 +42,7 @@ graph TD
     Tab4 --> MembreEntity[Entité Membre + Drag and Drop Photo Upload]
     Tab5 --> RoleAssignmentEntity[Entité RoleAssignment & Role]
     Tab6 --> EvenementEntity[Entité Evenement]
-    EvenementEntity --> TypeEvenementEntity[Entité TypeEvenement]
+    EvenementEntity --> TypeEvenementEntity[Entité TypeEvenement - CRUD Dédié]
     Tab6 --> PresenceEntity[Entité Presence & Pointages Scannés]
 ```
 
@@ -52,12 +52,15 @@ graph TD
 
 * **Séparation MVC Strict** : Tout le rendu visuel est confiné dans le dossier `templates/admin/` sous forme de templates Twig responsives utilisant Tailwind CSS.
 * **Gestion des Médias / Photos** : Formulaire multipart avec zone interactive de Glisser-Déposer (Drag and Drop) permettant d'uploader des photos de profil stockées sous `public/uploads/membres/`.
-* **Gestion des Types d'Événements (`TypeEvenement`) & Événements (`Evenement`)** : Catégorisation dynamique des événements par types (Cultes, Formations, Asa, Réunions).
+* **Gestion des Types d'Événements (`TypeEvenement`) & Événements (`Evenement`)** :
+  * Module de gestion séparé des types d'événements (`/admin/types-evenement`) avec création, édition et suppression.
+  * Catégorisation dynamique des événements lors de la création sur les paroisses, groupes et associations.
 * **Architecture des Controllers** :
   * `AdminDashboardController` (`/admin/dashboard`) : Vue synthétique et tableaux de bord KPI.
-  * `AdminFiangonanaController` (`/admin/fiangonana`, `/admin/fiangonana/nouveau`, `/admin/fiangonana/{id}/editer`, `/admin/fiangonana/{id}/nouveau-groupe`, `/admin/fiangonana/{id}/nouvelle-association`, `/admin/fiangonana/{id}/nouvel-evenement`) : Gestion des paroisses avec leurs groupes, associations, membres, bureau et événements typés.
-  * `AdminGroupeController` (`/admin/groupes`, `/admin/groupes/nouveau`, `/admin/groupes/{id}/editer`, `/admin/groupes/{id}/nouvel-evenement`) : Gestion des zones géographiques avec membres, bureau et événements typés.
-  * `AdminAssociationController` (`/admin/associations`, `/admin/associations/nouveau`, `/admin/associations/{id}/editer`, `/admin/associations/{id}/nouvel-evenement`) : Gestion des associations avec membres, comités et événements typés.
+  * `AdminFiangonanaController` (`/admin/fiangonana`, `/admin/fiangonana/nouveau`, `/admin/fiangonana/{id}/editer`, `/admin/fiangonana/{id}/nouveau-groupe`, `/admin/fiangonana/{id}/nouvelle-association`, `/admin/fiangonana/{id}/nouvel-evenement`) : Gestion des paroisses.
+  * `AdminGroupeController` (`/admin/groupes`, `/admin/groupes/nouveau`, `/admin/groupes/{id}/editer`, `/admin/groupes/{id}/nouvel-evenement`) : Gestion des zones géographiques.
+  * `AdminAssociationController` (`/admin/associations`, `/admin/associations/nouveau`, `/admin/associations/{id}/editer`, `/admin/associations/{id}/nouvel-evenement`) : Gestion des associations.
+  * `AdminTypeEvenementController` (`/admin/types-evenement`, `/admin/types-evenement/nouveau`, `/admin/types-evenement/{id}/editer`, `/admin/types-evenement/{id}/supprimer`) : Gestion séparée des types d'événements.
   * `AdminRoleController` (`/admin/roles`) : Gestion des rôles applicatifs et permissions.
   * `AdminMembreController` (`/admin/membres`, `/admin/membres/nouveau`, `/admin/membres/{id}/editer`) : Inscription, modification, upload de photo en drag-and-drop, carte membre, QR code et présences.
   * `AdminPresenceController` (`/admin/presences`) : Consolidation des événements, historique des scans et rapports de participation.
@@ -72,9 +75,14 @@ graph TD
     Root --> Fiangonana[/admin/fiangonana]
     Root --> Groupes[/admin/groupes]
     Root --> Associations[/admin/associations]
+    Root --> TypeEvenements[/admin/types-evenement]
     Root --> Roles[/admin/roles]
     Root --> Membres[/admin/membres]
     Root --> Presences[/admin/presences]
+
+    TypeEvenements --> TypeEvenementNew[/admin/types-evenement/nouveau]
+    TypeEvenements --> TypeEvenementEdit[/admin/types-evenement/{id}/editer]
+    TypeEvenements --> TypeEvenementDelete[/admin/types-evenement/{id}/supprimer]
 
     Fiangonana --> FiangonanaEdit[/admin/fiangonana/{id}/editer - Tabs: Groupes, Associations, Membres, Bureau, Événements]
     FiangonanaEdit --> AddGroupe[/admin/fiangonana/{id}/nouveau-groupe]

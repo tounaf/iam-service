@@ -1,0 +1,65 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Types d'Événements - Administration{% endblock %}
+{% block header_title %}Gestion des Types d'Événements{% endblock %}
+
+{% block body %}
+<div class="space-y-6">
+
+    <!-- Header Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div>
+            <h3 class="text-lg font-bold text-slate-800">Catalogue des Types d'Événements</h3>
+            <p class="text-xs text-slate-500 mt-1">Gérer les catégories d'activités (Cultes, Formations des Jeunes, Asa, Retraites, etc.)</p>
+        </div>
+        <a href="/admin/types-evenement/nouveau" class="inline-flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition shadow-sm">
+            <i class="fa-solid fa-plus"></i>
+            <span>Nouveau Type d'Événement</span>
+        </a>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                    <tr>
+                        <th class="py-3.5 px-6">ID & Nom</th>
+                        <th class="py-3.5 px-6">Code Unique</th>
+                        <th class="py-3.5 px-6">Description</th>
+                        <th class="py-3.5 px-6 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for t in typesEvenement %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="py-4 px-6 font-bold text-slate-800">
+                                #{{ t.id }} - {{ t.nom }}
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                                    {{ t.code|default('N/A') }}
+                                </span>
+                            </td>
+                            <td class="py-4 px-6 text-xs text-slate-500">
+                                {{ t.description|default('Aucune description') }}
+                            </td>
+                            <td class="py-4 px-6 text-right space-x-3">
+                                <a href="/admin/types-evenement/{{ t.id }}/editer" class="text-indigo-600 hover:text-indigo-900 font-semibold text-xs"><i class="fa-solid fa-pen-to-square mr-1"></i> Éditer</a>
+                                <form method="POST" action="/admin/types-evenement/{{ t.id }}/supprimer" class="inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce type d\'événement ?');">
+                                    <button type="submit" class="text-rose-600 hover:text-rose-900 font-semibold text-xs"><i class="fa-solid fa-trash mr-1"></i> Supprimer</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="py-8 text-center text-slate-400">Aucun type d'événement configuré.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
