@@ -1,0 +1,74 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Gestion des Rôles & Sécurité - Administration{% endblock %}
+{% block header_title %}Gestion des Rôles & Sécurité (CRBAC){% endblock %}
+
+{% block body %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <!-- Header with Actions -->
+    <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-base font-bold text-slate-800">Liste des Rôles Système</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Rôles et titres de fonction pour le contrôle d'accès contextuel (ex: PRESIDENT, TRESORIER).</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="/admin/roles/nouveau" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
+                <i class="fa-solid fa-plus"></i>
+                <span>Nouveau Rôle</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                <tr>
+                    <th class="py-3.5 px-6">ID & Intitulé Rôle</th>
+                    <th class="py-3.5 px-6">Description</th>
+                    <th class="py-3.5 px-6">Permissions Associées</th>
+                    <th class="py-3.5 px-6 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for r in roles %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-xs font-bold flex items-center justify-center">
+                                    #{{ r.id }}
+                                </span>
+                                <span class="px-3 py-1 rounded-lg text-xs font-mono font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wider">
+                                    {{ r.name }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-xs text-slate-500">
+                            {{ r.description|default('Aucune description') }}
+                        </td>
+                        <td class="py-4 px-6 text-xs font-medium text-slate-700">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                                <i class="fa-solid fa-key mr-1.5 text-[10px]"></i> {{ r.permissions|length }} permission(s)
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 text-right space-x-2">
+                            <a href="/admin/roles/{{ r.id }}/editer" title="Éditer Rôle" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <form method="POST" action="/admin/roles/{{ r.id }}/supprimer" class="inline-block" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce rôle ?');">
+                                <button type="submit" title="Supprimer Rôle" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="py-8 text-center text-slate-400">Aucun rôle enregistré.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
