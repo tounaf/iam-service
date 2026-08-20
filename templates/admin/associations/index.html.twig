@@ -1,0 +1,76 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Gestion des Associations Interne - Administration{% endblock %}
+{% block header_title %}Gestion des Associations Interne{% endblock %}
+
+{% block body %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <!-- Header with Actions -->
+    <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-base font-bold text-slate-800">Liste des Associations Interne</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Chorales, sections jeunes, comités et branches d'activité.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="/admin/associations/nouveau" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
+                <i class="fa-solid fa-plus"></i>
+                <span>Nouvelle Association</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                <tr>
+                    <th class="py-3.5 px-6">ID & Nom</th>
+                    <th class="py-3.5 px-6">Description</th>
+                    <th class="py-3.5 px-6">Paroisse</th>
+                    <th class="py-3.5 px-6">Membres Inscrits</th>
+                    <th class="py-3.5 px-6 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for a in associations %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-xs font-bold flex items-center justify-center">
+                                    #{{ a.id }}
+                                </span>
+                                <span class="font-bold text-slate-800">{{ a.nom }}</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-xs text-slate-500">
+                            {{ a.description|default('Aucune description') }}
+                        </td>
+                        <td class="py-4 px-6 text-xs font-medium text-slate-700">
+                            {{ a.fiangonana ? a.fiangonana.nom : 'Non spécifiée' }}
+                        </td>
+                        <td class="py-4 px-6 text-xs">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                <i class="fa-solid fa-users mr-1.5 text-[10px]"></i> {{ a.membres|length }} membre(s)
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 text-right space-x-2">
+                            <a href="/admin/associations/{{ a.id }}/editer" title="Éditer Association" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <form method="POST" action="/admin/associations/{{ a.id }}/supprimer" class="inline-block" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette association ?');">
+                                <button type="submit" title="Supprimer Association" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-400">Aucune association enregistrée.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -36,6 +36,14 @@
                     <i class="fa-solid fa-church w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Paroisses (Fiangonana)
                 </a>
+                <a href="/admin/groupes" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_groupe' %}bg-indigo-800 text-white font-semibold{% endif %}">
+                    <i class="fa-solid fa-map-location-dot w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
+                    Zones (Groupes)
+                </a>
+                <a href="/admin/associations" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_association' %}bg-indigo-800 text-white font-semibold{% endif %}">
+                    <i class="fa-solid fa-people-group w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
+                    Associations
+                </a>
                 <a href="/admin/membres" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_membre' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-users w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Membres
