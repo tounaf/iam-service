@@ -74,6 +74,10 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['membre:read', 'membre:write'])]
     private ?\DateTimeInterface $dateNaissance = null;
 
+    #[ORM\Column(length: 500, nullable: true)]
+    #[Groups(['membre:read', 'membre:write'])]
+    private ?string $photoUrl = null;
+
     #[ORM\ManyToOne(targetEntity: Groupe::class, inversedBy: 'membres')]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['membre:read', 'membre:write'])]
@@ -99,7 +103,7 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
-    #[ORM\Column(length: 255, unique: true)]
+    #[ORM\Column(length: 255, unique: true, nullable: true)]
     #[Groups(['membre:read'])]
     private ?string $qrCodeToken = null;
 
@@ -108,7 +112,6 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
         $this->associations = new ArrayCollection();
         $this->roleAssignments = new ArrayCollection();
         $this->roles = ['ROLE_USER'];
-        $this->qrCodeToken = bin2hex(random_bytes(16));
     }
 
     public function getId(): ?int
@@ -168,6 +171,17 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
     public function setDateNaissance(?\DateTimeInterface $dateNaissance): self
     {
         $this->dateNaissance = $dateNaissance;
+        return $this;
+    }
+
+    public function getPhotoUrl(): ?string
+    {
+        return $this->photoUrl;
+    }
+
+    public function setPhotoUrl(?string $photoUrl): self
+    {
+        $this->photoUrl = $photoUrl;
         return $this;
     }
 
@@ -240,7 +254,6 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
 
         return array_unique($roles);
@@ -254,7 +267,6 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
-        // If you store any temporary, sensitive data on the user, clear it here
     }
 
     public function getQrCodeToken(): ?string
@@ -262,7 +274,7 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->qrCodeToken;
     }
 
-    public function setQrCodeToken(string $qrCodeToken): self
+    public function setQrCodeToken(?string $qrCodeToken): self
     {
         $this->qrCodeToken = $qrCodeToken;
         return $this;

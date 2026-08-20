@@ -2,9 +2,13 @@
 
 namespace App\Controller;
 
+use App\Entity\Association;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
 use App\Entity\Membre;
+use App\Entity\Presence;
+use App\Entity\Role;
+use App\Entity\RoleAssignment;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,15 +37,17 @@ class AdminMembreController extends AbstractController
             $prenom = trim($request->request->get('prenom', ''));
             $email = trim($request->request->get('email', ''));
             $telephone = trim($request->request->get('telephone', ''));
+            $photoUrl = trim($request->request->get('photoUrl', ''));
             $groupeId = $request->request->get('groupe_id');
             $fiangonanaId = $request->request->get('fiangonana_id');
+            $associationIds = $request->request->all('association_ids');
 
             $membre = new Membre();
             $membre->setNom($nom);
             $membre->setPrenom($prenom);
             $membre->setEmail($email ?: null);
             $membre->setTelephone($telephone ?: null);
-            $membre->setQrCodeToken(bin2hex(random_bytes(16)));
+            $membre->setPhotoUrl($photoUrl ?: null);
 
             if ($groupeId) {
                 $groupe = $em->getRepository(Groupe::class)->find($groupeId);
@@ -57,16 +63,27 @@ class AdminMembreController extends AbstractController
                 }
             }
 
+            if (!empty($associationIds)) {
+                foreach ($associationIds as $assocId) {
+                    $assoc = $em->getRepository(Association::class)->find($assocId);
+                    if ($assoc) {
+                        $membre->addAssociation($assoc);
+                    }
+                }
+            }
+
             $em->persist($membre);
             $em->flush();
 
             $this->addFlash('success', sprintf('Membre %s %s inscrit avec succès !', $prenom, $nom));
 
-            return $this->redirectToRoute('admin_membre_index');
+            return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
         }
 
         $groupes = $em->getRepository(Groupe::class)->findAll();
         $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
+        $associations = $em->getRepository(Association::class)->findAll();
+        $roles = $em->getRepository(Role::class)->findAll();
 
         return $this->render('admin/membres/form.html.twig', [
             'current_route' => 'admin_membre',
@@ -74,6 +91,9 @@ class AdminMembreController extends AbstractController
             'membre' => null,
             'groupes' => $groupes,
             'fiangonanas' => $fiangonanas,
+            'associations' => $associations,
+            'roles' => $roles,
+            'presences' => [],
         ]);
     }
 
@@ -86,39 +106,87 @@ class AdminMembreController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $nom = trim($request->request->get('nom', ''));
-            $prenom = trim($request->request->get('prenom', ''));
-            $email = trim($request->request->get('email', ''));
-            $telephone = trim($request->request->get('telephone', ''));
-            $groupeId = $request->request->get('groupe_id');
-            $fiangonanaId = $request->request->get('fiangonana_id');
+            $action = $request->request->get('form_action');
 
-            $membre->setNom($nom);
-            $membre->setPrenom($prenom);
-            $membre->setEmail($email ?: null);
-            $membre->setTelephone($telephone ?: null);
+            if ($action === 'add_role') {
+                $roleId = $request->request->get('role_id');
+                $contextAssocId = $request->request->get('context_association_id');
+                $role = $em->getRepository(Role::class)->find($roleId);
 
-            if ($groupeId) {
-                $groupe = $em->getRepository(Groupe::class)->find($groupeId);
-                $membre->setZoneGeographique($groupe);
+                if ($role) {
+                    $assignment = new RoleAssignment();
+                    $assignment->setMembre($membre);
+                    $assignment->setRole($role);
+                    $assignment->setStartDate(new \DateTimeImmutable());
+                    $assignment->setExerciceYear((string)date('Y'));
+                    $assignment->setIsActive(true);
+
+                    if ($contextAssocId) {
+                        $assocContext = $em->getRepository(Association::class)->find($contextAssocId);
+                        $assignment->setAssociationContext($assocContext);
+                    } elseif ($membre->getFiangonana()) {
+                        $assignment->setFiangonanaContext($membre->getFiangonana());
+                    }
+
+                    $em->persist($assignment);
+                    $em->flush();
+
+                    $this->addFlash('success', sprintf('Rôle "%s" attribué à %s.', $role->getName(), $membre->getPrenom()));
+                }
             } else {
-                $membre->setZoneGeographique(null);
+                $nom = trim($request->request->get('nom', ''));
+                $prenom = trim($request->request->get('prenom', ''));
+                $email = trim($request->request->get('email', ''));
+                $telephone = trim($request->request->get('telephone', ''));
+                $photoUrl = trim($request->request->get('photoUrl', ''));
+                $groupeId = $request->request->get('groupe_id');
+                $fiangonanaId = $request->request->get('fiangonana_id');
+                $associationIds = $request->request->all('association_ids');
+
+                $membre->setNom($nom);
+                $membre->setPrenom($prenom);
+                $membre->setEmail($email ?: null);
+                $membre->setTelephone($telephone ?: null);
+                $membre->setPhotoUrl($photoUrl ?: null);
+
+                if ($groupeId) {
+                    $groupe = $em->getRepository(Groupe::class)->find($groupeId);
+                    $membre->setZoneGeographique($groupe);
+                } else {
+                    $membre->setZoneGeographique(null);
+                }
+
+                if ($fiangonanaId) {
+                    $fiangonana = $em->getRepository(Fiangonana::class)->find($fiangonanaId);
+                    $membre->setFiangonana($fiangonana);
+                }
+
+                // Update Associations
+                foreach ($membre->getAssociations() as $existingAssoc) {
+                    $membre->removeAssociation($existingAssoc);
+                }
+                if (!empty($associationIds)) {
+                    foreach ($associationIds as $assocId) {
+                        $assoc = $em->getRepository(Association::class)->find($assocId);
+                        if ($assoc) {
+                            $membre->addAssociation($assoc);
+                        }
+                    }
+                }
+
+                $em->flush();
+
+                $this->addFlash('success', sprintf('Membre %s %s mis à jour avec succès !', $prenom, $nom));
             }
 
-            if ($fiangonanaId) {
-                $fiangonana = $em->getRepository(Fiangonana::class)->find($fiangonanaId);
-                $membre->setFiangonana($fiangonana);
-            }
-
-            $em->flush();
-
-            $this->addFlash('success', sprintf('Membre %s %s mis à jour avec succès !', $prenom, $nom));
-
-            return $this->redirectToRoute('admin_membre_index');
+            return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
         }
 
         $groupes = $em->getRepository(Groupe::class)->findAll();
         $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
+        $associations = $em->getRepository(Association::class)->findAll();
+        $roles = $em->getRepository(Role::class)->findAll();
+        $presences = $em->getRepository(Presence::class)->findBy(['membre' => $membre], ['scannedAt' => 'DESC']);
 
         return $this->render('admin/membres/form.html.twig', [
             'current_route' => 'admin_membre',
@@ -126,6 +194,43 @@ class AdminMembreController extends AbstractController
             'membre' => $membre,
             'groupes' => $groupes,
             'fiangonanas' => $fiangonanas,
+            'associations' => $associations,
+            'roles' => $roles,
+            'presences' => $presences,
         ]);
+    }
+
+    #[Route('/admin/membres/{id}/generate-qrcode', name: 'admin_membre_generate_qrcode', methods: ['POST'])]
+    public function generateQrCode(int $id, EntityManagerInterface $em): Response
+    {
+        $membre = $em->getRepository(Membre::class)->find($id);
+        if (!$membre) {
+            throw new NotFoundHttpException('Membre introuvable.');
+        }
+
+        $token = bin2hex(random_bytes(16));
+        $membre->setQrCodeToken($token);
+        $em->flush();
+
+        $this->addFlash('success', sprintf('Code QR unique généré avec succès pour %s %s !', $membre->getPrenom(), $membre->getNom()));
+
+        return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
+    }
+
+    #[Route('/admin/role-assignments/{id}/delete', name: 'admin_role_assignment_delete', methods: ['POST'])]
+    public function deleteRoleAssignment(int $id, EntityManagerInterface $em): Response
+    {
+        $assignment = $em->getRepository(RoleAssignment::class)->find($id);
+        if (!$assignment) {
+            throw new NotFoundHttpException('Attribution introuvable.');
+        }
+
+        $membreId = $assignment->getMembre()?->getId();
+        $em->remove($assignment);
+        $em->flush();
+
+        $this->addFlash('success', 'Rôle retiré avec succès.');
+
+        return $this->redirectToRoute('admin_membre_edit', ['id' => $membreId]);
     }
 }

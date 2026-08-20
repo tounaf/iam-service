@@ -1,58 +1,312 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}{{ isEdit ? 'Éditer Membre' : 'Inscrire un Membre' }} - Administration Paroissiale{% endblock %}
-{% block header_title %}{{ isEdit ? 'Édition d\'un Membre' : 'Inscription d\'un Nouveau Membre' }}{% endblock %}
+{% block title %}{{ isEdit ? 'Fiche & Édition Membre' : 'Inscrire un Membre' }} - Administration{% endblock %}
+{% block header_title %}{{ isEdit ? 'Fiche Membre & Gestion' : 'Inscription d\'un Nouveau Membre' }}{% endblock %}
 
 {% block body %}
-<div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
-    <form method="POST" class="space-y-5">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-                <label for="nom" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Nom *</label>
-                <input type="text" id="nom" name="nom" value="{{ membre ? membre.nom : '' }}" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
+<div class="max-w-4xl mx-auto space-y-6">
+
+    {% if isEdit and membre %}
+        <!-- Header Member Banner -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center space-x-5">
+                <div class="relative">
+                    {% if membre.photoUrl %}
+                        <img src="{{ membre.photoUrl }}" alt="Photo {{ membre.prenom }}" class="w-20 h-28 object-cover rounded-2xl border border-slate-200 shadow-sm">
+                    {% else %}
+                        <div class="w-20 h-28 rounded-2xl bg-indigo-100 text-indigo-700 flex flex-col items-center justify-center font-bold text-2xl border border-indigo-200 shadow-inner">
+                            <i class="fa-solid fa-user text-3xl"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="flex items-center space-x-3">
+                        <h2 class="text-2xl font-extrabold text-slate-800">{{ membre.prenom }} {{ membre.nom }}</h2>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">ID #{{ membre.id }}</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-church mr-1"></i> {{ membre.fiangonana ? membre.fiangonana.nom : 'Paroisse non spécifiée' }}</p>
+                    <p class="text-xs text-slate-500 mt-0.5"><i class="fa-solid fa-map-location-dot mr-1"></i> Zone : {{ membre.zoneGeographique ? membre.zoneGeographique.nom : 'Non spécifiée' }}</p>
+                </div>
             </div>
-            <div>
-                <label for="prenom" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Prénom *</label>
-                <input type="text" id="prenom" name="prenom" value="{{ membre ? membre.prenom : '' }}" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
+
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="/api/membres/{{ membre.id }}/carte" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
+                    <i class="fa-solid fa-id-card"></i>
+                    <span>Imprimer Carte</span>
+                </a>
+                <a href="/api/membres/{{ membre.id }}/participation-stats" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Stats Assiduité</span>
+                </a>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-                <label for="email" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Adresse Email</label>
-                <input type="email" id="email" name="email" value="{{ membre ? membre.email : '' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
-            </div>
-            <div>
-                <label for="telephone" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Téléphone</label>
-                <input type="text" id="telephone" name="telephone" value="{{ membre ? membre.telephone : '' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
-            </div>
-        </div>
-
-        <div>
-            <label for="groupe_id" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Zone Géographique / Groupe</label>
-            <select id="groupe_id" name="groupe_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm bg-white">
-                <option value="">-- Sélectionner une zone --</option>
-                {% for g in groupes %}
-                    <option value="{{ g.id }}" {% if membre and membre.zoneGeographique and membre.zoneGeographique.id == g.id %}selected{% endif %}>{{ g.nom }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div>
-            <label for="fiangonana_id" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Paroisse / Église</label>
-            <select id="fiangonana_id" name="fiangonana_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm bg-white">
-                {% for f in fiangonanas %}
-                    <option value="{{ f.id }}" {% if membre and membre.fiangonana and membre.fiangonana.id == f.id %}selected{% endif %}>{{ f.nom }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
-            <a href="/admin/membres" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Annuler</a>
-            <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-sm">
-                {{ isEdit ? 'Enregistrer les Modifications' : 'Créer le Membre' }}
+        <!-- Tab Navigation Bar -->
+        <div class="border-b border-slate-200 flex space-x-4 text-sm font-semibold">
+            <button onclick="switchTab('tab-general')" id="tab-btn-general" class="tab-link pb-3 border-b-2 border-indigo-600 text-indigo-600 flex items-center space-x-2 transition">
+                <i class="fa-solid fa-id-badge"></i>
+                <span>Informations Générales & QR Code</span>
+            </button>
+            <button onclick="switchTab('tab-roles')" id="tab-btn-roles" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Associations & Rôles CRBAC</span>
+            </button>
+            <button onclick="switchTab('tab-presence')" id="tab-btn-presence" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Historique des Présences ({{ presences|length }})</span>
             </button>
         </div>
-    </form>
+    {% endif %}
+
+    <!-- TAB 1: General Info & QR Code -->
+    <div id="tab-general" class="tab-content bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
+        <form method="POST" class="space-y-5">
+            <input type="hidden" name="form_action" value="update_info">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label for="nom" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Nom *</label>
+                    <input type="text" id="nom" name="nom" value="{{ membre ? membre.nom : '' }}" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
+                </div>
+                <div>
+                    <label for="prenom" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Prénom *</label>
+                    <input type="text" id="prenom" name="prenom" value="{{ membre ? membre.prenom : '' }}" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label for="email" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Adresse Email *</label>
+                    <input type="email" id="email" name="email" value="{{ membre ? membre.email : '' }}" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
+                </div>
+                <div>
+                    <label for="telephone" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Téléphone</label>
+                    <input type="text" id="telephone" name="telephone" value="{{ membre ? membre.telephone : '' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label for="photoUrl" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">URL / Chemin de la Photo de Profil</label>
+                <input type="text" id="photoUrl" name="photoUrl" value="{{ membre ? membre.photoUrl : '' }}" placeholder="https://example.com/photos/membre.jpg" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label for="fiangonana_id" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Paroisse / Église *</label>
+                    <select id="fiangonana_id" name="fiangonana_id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm bg-white">
+                        <option value="">-- Sélectionner une paroisse --</option>
+                        {% for f in fiangonanas %}
+                            <option value="{{ f.id }}" {% if membre and membre.fiangonana and membre.fiangonana.id == f.id %}selected{% endif %}>{{ f.nom }} ({{ f.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="groupe_id" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Zone Géographique / Groupe</label>
+                    <select id="groupe_id" name="groupe_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm bg-white">
+                        <option value="">-- Sélectionner une zone --</option>
+                        {% for g in groupes %}
+                            <option value="{{ g.id }}" {% if membre and membre.zoneGeographique and membre.zoneGeographique.id == g.id %}selected{% endif %}>{{ g.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- QR Code Section -->
+            {% if isEdit and membre %}
+                <div class="pt-6 border-t border-slate-100">
+                    <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Gestion du Code QR Unique</h4>
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        {% if membre.qrCodeToken %}
+                            <!-- QR Code Generated Display -->
+                            <div class="flex items-center space-x-4">
+                                <img src="/api/membres/{{ membre.id }}/qr-code" alt="Code QR Membre" class="w-24 h-28 border border-slate-200 rounded-xl bg-white p-1">
+                                <div>
+                                    <p class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md inline-block border border-emerald-100 mb-1"><i class="fa-solid fa-check-circle mr-1"></i> Code QR Généré & Actif</p>
+                                    <p class="text-xs text-slate-500 font-mono">Jeton : {{ membre.qrCodeToken }}</p>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">Scannable lors des cultes, formations des jeunes et événements.</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Generate QR Code Button -->
+                            <div>
+                                <p class="text-xs font-semibold text-slate-700">Aucun code QR unique attribué à ce membre.</p>
+                                <p class="text-[11px] text-slate-400">Générez un jeton sécurisé pour permettre le pointage aux événements.</p>
+                            </div>
+                            <form method="POST" action="/admin/membres/{{ membre.id }}/generate-qrcode">
+                                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
+                                    <i class="fa-solid fa-qrcode"></i>
+                                    <span>Générer le Code QR</span>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
+                <a href="/admin/membres" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Annuler</a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-sm">
+                    {{ isEdit ? 'Enregistrer les Informations' : 'Inscrire le Membre' }}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if isEdit and membre %}
+        <!-- TAB 2: Associations & CRBAC Roles -->
+        <div id="tab-roles" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-8">
+            <!-- Associations Selection -->
+            <form method="POST" class="space-y-4">
+                <input type="hidden" name="form_action" value="update_associations">
+                <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Adhésion aux Associations Interne</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {% for a in associations %}
+                        {% set isMember = false %}
+                        {% for memAssoc in membre.associations %}
+                            {% if memAssoc.id == a.id %}{% set isMember = true %}{% endif %}
+                        {% endfor %}
+                        <label class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition">
+                            <input type="checkbox" name="association_ids[]" value="{{ a.id }}" {% if isMember %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-slate-300">
+                            <div>
+                                <p class="text-xs font-bold text-slate-800">{{ a.nom }}</p>
+                                <p class="text-[10px] text-slate-400">{{ a.fiangonana ? a.fiangonana.nom : '' }}</p>
+                            </div>
+                        </label>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 py-2 rounded-xl transition">Mettre à jour les Associations</button>
+            </form>
+
+            <!-- CRBAC Roles Assignment -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Mandats & Rôles Contextuels Attribués (CRBAC)</h4>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                            <tr>
+                                <th class="py-3 px-4">Rôle</th>
+                                <th class="py-3 px-4">Contexte</th>
+                                <th class="py-3 px-4">Exercice</th>
+                                <th class="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for ra in membre.roleAssignments %}
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="py-3 px-4 font-bold text-indigo-700 uppercase font-mono text-xs">{{ ra.role ? ra.role.name : 'N/A' }}</td>
+                                    <td class="py-3 px-4 text-xs">
+                                        {% if ra.associationContext %}
+                                            <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">Assoc: {{ ra.associationContext.nom }}</span>
+                                        {% elseif ra.fiangonanaContext %}
+                                            <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium">Paroisse: {{ ra.fiangonanaContext.nom }}</span>
+                                        {% else %}
+                                            <span class="italic text-slate-400">Global</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-xs font-mono">{{ ra.exerciceYear }}</td>
+                                    <td class="py-3 px-4 text-right">
+                                        <form method="POST" action="/admin/role-assignments/{{ ra.id }}/delete" onsubmit="return confirm('Retirer ce rôle ?');">
+                                            <button type="submit" class="text-rose-600 hover:text-rose-800 text-xs font-semibold"><i class="fa-solid fa-trash mr-1"></i> Retirer</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="py-4 text-center text-slate-400 text-xs">Aucun rôle contextuel attribué à ce membre.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Form to Add Role -->
+                <form method="POST" class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-end gap-3">
+                    <input type="hidden" name="form_action" value="add_role">
+                    <div class="flex-1 w-full">
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Attribuer un Rôle</label>
+                        <select name="role_id" required class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                            <option value="">-- Choisir un rôle --</option>
+                            {% for r in roles %}
+                                <option value="{{ r.id }}">{{ r.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Contexte Association (Optionnel)</label>
+                        <select name="context_association_id" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                            <option value="">-- Paroisse globale --</option>
+                            {% for a in associations %}
+                                <option value="{{ a.id }}">{{ a.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 py-2 rounded-lg transition whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Attribuer</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 3: Presence History -->
+        <div id="tab-presence" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-4">
+            <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Historique des Pointages de Présence</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                        <tr>
+                            <th class="py-3.5 px-6">ID & Date / Heure</th>
+                            <th class="py-3.5 px-6">Événement / Activité</th>
+                            <th class="py-3.5 px-6">Scanné Par</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for p in presences %}
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-4 px-6 text-xs">
+                                    <span class="font-bold text-slate-800">#{{ p.id }}</span>
+                                    <p class="text-slate-400 mt-0.5">{{ p.scannedAt|date('d/m/Y H:i:s') }}</p>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <span class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                        {{ p.activityName }}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-6 text-xs text-slate-500">
+                                    {% if p.scannedBy %}
+                                        {{ p.scannedBy.prenom }} {{ p.scannedBy.nom }}
+                                    {% else %}
+                                        <span class="italic text-slate-400">Scan Autonome</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="py-8 text-center text-slate-400">Aucun pointage de présence enregistré pour ce membre.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
 </div>
+
+{% block javascripts %}
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-link').forEach(el => {
+            el.classList.remove('border-indigo-600', 'text-indigo-600');
+            el.classList.add('border-transparent', 'text-slate-500');
+        });
+
+        document.getElementById(tabId).classList.remove('hidden');
+        const btn = document.getElementById('tab-btn-' + tabId.replace('tab-', ''));
+        if (btn) {
+            btn.classList.remove('border-transparent', 'text-slate-500');
+            btn.classList.add('border-indigo-600', 'text-indigo-600');
+        }
+    }
+</script>
+{% endblock %}
 {% endblock %}
