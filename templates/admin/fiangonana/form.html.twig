@@ -243,25 +243,64 @@
 
         <!-- TAB 6: Events & Presences -->
         <div id="tab-events" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
-            <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Événements (Formations, Asa, Cultes) & Présences</h4>
-            {% for event in events %}
-                <div class="border border-slate-200 rounded-xl p-5 space-y-3 bg-slate-50/50">
-                    <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                        <span class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-star text-amber-500 mr-2"></i>{{ event.name }}</span>
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">{{ event.presences|length }} membre(s) présent(s)</span>
-                    </div>
-                    <div class="space-y-1">
-                        {% for p in event.presences %}
-                            <div class="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0">
-                                <span class="font-medium text-slate-700">{{ p.membre.prenom }} {{ p.membre.nom }}</span>
-                                <span class="text-slate-400 font-mono text-[11px]">{{ p.scannedAt|date('d/m/Y H:i') }}</span>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Gestion des Événements & Historique des Présences</h4>
+                    <p class="text-xs text-slate-500 mt-1">Créer un événement paroissial et suivre les pointages</p>
+                </div>
+            </div>
+
+            <!-- Add Event Form -->
+            <div class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-5 space-y-3">
+                <h5 class="text-xs font-bold text-indigo-900 uppercase tracking-wider"><i class="fa-solid fa-calendar-plus mr-1"></i> Créer un nouvel événement</h5>
+                <form action="/admin/fiangonana/{{ fiangonana.id }}/nouvel-evenement" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <input type="text" name="nom" required placeholder="Nom de l'événement (ex: Formation Jeunes)" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <input type="text" name="lieu" placeholder="Lieu (ex: Grande Salle)" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <input type="text" name="description" placeholder="Description courte" class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider transition">
+                        <i class="fa-solid fa-plus mr-1"></i> Créer l'Événement
+                    </button>
+                </form>
+            </div>
+
+            <!-- List of Created Events -->
+            {% if evenements %}
+                <div class="space-y-3">
+                    <h5 class="text-xs font-bold text-slate-700 uppercase">Événements créés pour cette paroisse :</h5>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {% for ev in evenements %}
+                            <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-1">
+                                <p class="text-xs font-bold text-slate-800"><i class="fa-solid fa-calendar-day text-indigo-500 mr-1.5"></i>{{ ev.nom }}</p>
+                                <p class="text-[11px] text-slate-500"><i class="fa-solid fa-location-dot mr-1"></i>Lieu: {{ ev.lieu|default('Non spécifié') }}</p>
+                                <p class="text-[10px] text-slate-400 font-mono">Créé le {{ ev.createdAt|date('d/m/Y') }}</p>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
-            {% else %}
-                <p class="py-6 text-center text-slate-400 text-xs">Aucun événement enregistré avec présences pour cette paroisse.</p>
-            {% endfor %}
+            {% endif %}
+
+            <!-- Grouped Presences by Event/Activity Name -->
+            <div class="space-y-4 pt-2 border-t border-slate-100">
+                <h5 class="text-xs font-bold text-slate-700 uppercase">Pointages et Présences par Activité :</h5>
+                {% for event in events %}
+                    <div class="border border-slate-200 rounded-xl p-5 space-y-3 bg-slate-50/50">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <span class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-star text-amber-500 mr-2"></i>{{ event.name }}</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">{{ event.presences|length }} membre(s) présent(s)</span>
+                        </div>
+                        <div class="space-y-1">
+                            {% for p in event.presences %}
+                                <div class="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0">
+                                    <span class="font-medium text-slate-700">{{ p.membre.prenom }} {{ p.membre.nom }}</span>
+                                    <span class="text-slate-400 font-mono text-[11px]">{{ p.scannedAt|date('d/m/Y H:i') }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="py-6 text-center text-slate-400 text-xs">Aucun événement enregistré avec présences pour cette paroisse.</p>
+                {% endfor %}
+            </div>
         </div>
     {% endif %}
 

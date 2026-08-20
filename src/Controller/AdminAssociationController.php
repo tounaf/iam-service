@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Association;
+use App\Entity\Evenement;
 use App\Entity\Fiangonana;
 use App\Entity\Presence;
 use App\Entity\RoleAssignment;
@@ -66,6 +67,7 @@ class AdminAssociationController extends AbstractController
             'membres' => [],
             'roleAssignments' => [],
             'events' => [],
+            'evenements' => [],
         ]);
     }
 
@@ -108,6 +110,9 @@ class AdminAssociationController extends AbstractController
         // Fetch committee/bureau roles in association context
         $roleAssignments = $em->getRepository(RoleAssignment::class)->findBy(['associationContext' => $association, 'isActive' => true]);
 
+        // Fetch explicit created events for this association
+        $evenements = $em->getRepository(Evenement::class)->findBy(['association' => $association], ['createdAt' => 'DESC']);
+
         // Fetch events and presences for members belonging to this association
         $memberIds = array_map(fn($m) => $m->getId(), $membres->toArray());
         $presences = [];
@@ -140,8 +145,40 @@ class AdminAssociationController extends AbstractController
             'fiangonanas' => $fiangonanas,
             'membres' => $membres,
             'roleAssignments' => $roleAssignments,
+            'evenements' => $evenements,
             'events' => array_values($events),
         ]);
+    }
+
+    #[Route('/admin/associations/{id}/nouvel-evenement', name: 'admin_association_add_evenement', methods: ['POST'])]
+    public function addEvenement(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $association = $em->getRepository(Association::class)->find($id);
+        if (!$association) {
+            throw new NotFoundHttpException('Association introuvable.');
+        }
+
+        $nom = trim($request->request->get('nom', ''));
+        $description = trim($request->request->get('description', ''));
+        $lieu = trim($request->request->get('lieu', ''));
+
+        if ($nom === '') {
+            $this->addFlash('error', 'Le nom de l\'événement est obligatoire.');
+        } else {
+            $evenement = new Evenement();
+            $evenement->setNom($nom);
+            $evenement->setDescription($description ?: null);
+            $evenement->setLieu($lieu ?: null);
+            $evenement->setAssociation($association);
+            $evenement->setFiangonana($association->getFiangonana());
+
+            $em->persist($evenement);
+            $em->flush();
+
+            $this->addFlash('success', sprintf('Événement "%s" créé pour l\'association avec succès !', $nom));
+        }
+
+        return $this->redirectToRoute('admin_association_edit', ['id' => $association->getId()]);
     }
 
     #[Route('/admin/associations/{id}/supprimer', name: 'admin_association_delete', methods: ['POST'])]

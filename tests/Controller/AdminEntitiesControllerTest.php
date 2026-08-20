@@ -9,6 +9,7 @@ use App\Controller\AdminGroupeController;
 use App\Controller\AdminMembreController;
 use App\Controller\AdminRoleController;
 use App\Entity\Association;
+use App\Entity\Evenement;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
 use App\Entity\Membre;
@@ -95,10 +96,12 @@ class AdminEntitiesControllerTest extends TestCase
         $membreRepo = $this->createMock(EntityRepository::class);
         $roleAssignmentRepo = $this->createMock(EntityRepository::class);
         $presenceRepo = $this->createMock(EntityRepository::class);
+        $evenementRepo = $this->createMock(EntityRepository::class);
 
         $fiangonanaRepo->method('find')->with(1)->willReturn($fiangonana);
         $membreRepo->method('findBy')->with(['fiangonana' => $fiangonana], ['id' => 'DESC'])->willReturn([$membre]);
         $roleAssignmentRepo->method('findBy')->with(['fiangonanaContext' => $fiangonana, 'isActive' => true])->willReturn([$roleAssignment]);
+        $evenementRepo->method('findBy')->with(['fiangonana' => $fiangonana], ['createdAt' => 'DESC'])->willReturn([]);
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $query = $this->createMock(AbstractQuery::class);
@@ -111,12 +114,13 @@ class AdminEntitiesControllerTest extends TestCase
         $queryBuilder->method('getQuery')->willReturn($query);
         $query->method('getResult')->willReturn([$presence]);
 
-        $em->method('getRepository')->willReturnCallback(function ($entityClass) use ($fiangonanaRepo, $membreRepo, $roleAssignmentRepo, $presenceRepo) {
+        $em->method('getRepository')->willReturnCallback(function ($entityClass) use ($fiangonanaRepo, $membreRepo, $roleAssignmentRepo, $presenceRepo, $evenementRepo) {
             return match ($entityClass) {
                 Fiangonana::class => $fiangonanaRepo,
                 Membre::class => $membreRepo,
                 RoleAssignment::class => $roleAssignmentRepo,
                 Presence::class => $presenceRepo,
+                Evenement::class => $evenementRepo,
                 default => null,
             };
         });
@@ -181,6 +185,34 @@ class AdminEntitiesControllerTest extends TestCase
         $this->assertStringContainsString('/admin/fiangonana/1/editer', $response->getTargetUrl());
     }
 
+    public function testFiangonanaAddEvenementDirectly(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse Ambohitantely');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $fiangonanaRepo = $this->createMock(EntityRepository::class);
+        $fiangonanaRepo->method('find')->with(1)->willReturn($fiangonana);
+
+        $em->method('getRepository')->with(Fiangonana::class)->willReturn($fiangonanaRepo);
+        $em->expects($this->once())->method('persist')->with($this::isInstanceOf(Evenement::class));
+        $em->expects($this->once())->method('flush');
+
+        $controller = new AdminFiangonanaController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/fiangonana/1/nouvel-evenement', 'POST', [
+            'nom' => 'Culte de Pentecôte 2026',
+            'lieu' => 'Temple Principal',
+            'description' => 'Culte spécial'
+        ]);
+
+        $response = $controller->addEvenement(1, $request, $em);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertStringContainsString('/admin/fiangonana/1/editer', $response->getTargetUrl());
+    }
+
     public function testGroupeEditRendersFourTabsData(): void
     {
         $fiangonana = new Fiangonana();
@@ -201,11 +233,13 @@ class AdminEntitiesControllerTest extends TestCase
         $membreRepo = $this->createMock(EntityRepository::class);
         $roleAssignmentRepo = $this->createMock(EntityRepository::class);
         $presenceRepo = $this->createMock(EntityRepository::class);
+        $evenementRepo = $this->createMock(EntityRepository::class);
 
         $groupeRepo->method('find')->with(1)->willReturn($groupe);
         $fiangonanaRepo->method('findAll')->willReturn([$fiangonana]);
         $membreRepo->method('findBy')->with(['zoneGeographique' => $groupe], ['id' => 'DESC'])->willReturn([$membre]);
         $roleAssignmentRepo->method('findBy')->with(['groupeContext' => $groupe, 'isActive' => true])->willReturn([]);
+        $evenementRepo->method('findBy')->with(['groupe' => $groupe], ['createdAt' => 'DESC'])->willReturn([]);
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $query = $this->createMock(AbstractQuery::class);
@@ -218,13 +252,14 @@ class AdminEntitiesControllerTest extends TestCase
         $queryBuilder->method('getQuery')->willReturn($query);
         $query->method('getResult')->willReturn([]);
 
-        $em->method('getRepository')->willReturnCallback(function ($entityClass) use ($groupeRepo, $fiangonanaRepo, $membreRepo, $roleAssignmentRepo, $presenceRepo) {
+        $em->method('getRepository')->willReturnCallback(function ($entityClass) use ($groupeRepo, $fiangonanaRepo, $membreRepo, $roleAssignmentRepo, $presenceRepo, $evenementRepo) {
             return match ($entityClass) {
                 Groupe::class => $groupeRepo,
                 Fiangonana::class => $fiangonanaRepo,
                 Membre::class => $membreRepo,
                 RoleAssignment::class => $roleAssignmentRepo,
                 Presence::class => $presenceRepo,
+                Evenement::class => $evenementRepo,
                 default => null,
             };
         });

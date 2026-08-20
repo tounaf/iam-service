@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Evenement;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
 use App\Entity\Membre;
@@ -67,6 +68,7 @@ class AdminGroupeController extends AbstractController
             'membres' => [],
             'roleAssignments' => [],
             'events' => [],
+            'evenements' => [],
         ]);
     }
 
@@ -109,6 +111,9 @@ class AdminGroupeController extends AbstractController
         // Fetch committee/bureau roles in group context
         $roleAssignments = $em->getRepository(RoleAssignment::class)->findBy(['groupeContext' => $groupe, 'isActive' => true]);
 
+        // Fetch explicit created events for this group
+        $evenements = $em->getRepository(Evenement::class)->findBy(['groupe' => $groupe], ['createdAt' => 'DESC']);
+
         // Fetch events and presences for members of this group
         $presences = $em->getRepository(Presence::class)->createQueryBuilder('p')
             ->join('p.membre', 'm')
@@ -138,8 +143,40 @@ class AdminGroupeController extends AbstractController
             'fiangonanas' => $fiangonanas,
             'membres' => $membres,
             'roleAssignments' => $roleAssignments,
+            'evenements' => $evenements,
             'events' => array_values($events),
         ]);
+    }
+
+    #[Route('/admin/groupes/{id}/nouvel-evenement', name: 'admin_groupe_add_evenement', methods: ['POST'])]
+    public function addEvenement(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $groupe = $em->getRepository(Groupe::class)->find($id);
+        if (!$groupe) {
+            throw new NotFoundHttpException('Groupe introuvable.');
+        }
+
+        $nom = trim($request->request->get('nom', ''));
+        $description = trim($request->request->get('description', ''));
+        $lieu = trim($request->request->get('lieu', ''));
+
+        if ($nom === '') {
+            $this->addFlash('error', 'Le nom de l\'événement est obligatoire.');
+        } else {
+            $evenement = new Evenement();
+            $evenement->setNom($nom);
+            $evenement->setDescription($description ?: null);
+            $evenement->setLieu($lieu ?: null);
+            $evenement->setGroupe($groupe);
+            $evenement->setFiangonana($groupe->getFiangonana());
+
+            $em->persist($evenement);
+            $em->flush();
+
+            $this->addFlash('success', sprintf('Événement "%s" créé pour la zone / groupe avec succès !', $nom));
+        }
+
+        return $this->redirectToRoute('admin_groupe_edit', ['id' => $groupe->getId()]);
     }
 
     #[Route('/admin/groupes/{id}/supprimer', name: 'admin_groupe_delete', methods: ['POST'])]

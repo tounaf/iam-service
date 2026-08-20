@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Association;
+use App\Entity\Evenement;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
 use App\Entity\Membre;
@@ -60,6 +61,7 @@ class AdminFiangonanaController extends AbstractController
             'associations' => [],
             'roleAssignments' => [],
             'events' => [],
+            'evenements' => [],
         ]);
     }
 
@@ -99,6 +101,9 @@ class AdminFiangonanaController extends AbstractController
         // Fetch committee/bureau roles in parish context
         $roleAssignments = $em->getRepository(RoleAssignment::class)->findBy(['fiangonanaContext' => $fiangonana, 'isActive' => true]);
 
+        // Fetch explicit created events for this parish
+        $evenements = $em->getRepository(Evenement::class)->findBy(['fiangonana' => $fiangonana], ['createdAt' => 'DESC']);
+
         // Fetch events and presences for members of this parish
         $presences = $em->getRepository(Presence::class)->createQueryBuilder('p')
             ->join('p.membre', 'm')
@@ -129,6 +134,7 @@ class AdminFiangonanaController extends AbstractController
             'groupes' => $groupes,
             'associations' => $associations,
             'roleAssignments' => $roleAssignments,
+            'evenements' => $evenements,
             'events' => array_values($events),
         ]);
     }
@@ -187,6 +193,36 @@ class AdminFiangonanaController extends AbstractController
         }
 
         return $this->redirectToRoute('admin_fiangonana_edit', ['id' => $fiangonana->getId(), 'tab' => 'associations']);
+    }
+
+    #[Route('/admin/fiangonana/{id}/nouvel-evenement', name: 'admin_fiangonana_add_evenement', methods: ['POST'])]
+    public function addEvenement(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $fiangonana = $em->getRepository(Fiangonana::class)->find($id);
+        if (!$fiangonana) {
+            throw new NotFoundHttpException('Paroisse introuvable.');
+        }
+
+        $nom = trim($request->request->get('nom', ''));
+        $description = trim($request->request->get('description', ''));
+        $lieu = trim($request->request->get('lieu', ''));
+
+        if ($nom === '') {
+            $this->addFlash('error', 'Le nom de l\'événement est obligatoire.');
+        } else {
+            $evenement = new Evenement();
+            $evenement->setNom($nom);
+            $evenement->setDescription($description ?: null);
+            $evenement->setLieu($lieu ?: null);
+            $evenement->setFiangonana($fiangonana);
+
+            $em->persist($evenement);
+            $em->flush();
+
+            $this->addFlash('success', sprintf('Événement "%s" créé pour la paroisse avec succès !', $nom));
+        }
+
+        return $this->redirectToRoute('admin_fiangonana_edit', ['id' => $fiangonana->getId(), 'tab' => 'events']);
     }
 
     #[Route('/admin/fiangonana/{id}/supprimer', name: 'admin_fiangonana_delete', methods: ['POST'])]
