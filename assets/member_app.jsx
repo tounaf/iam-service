@@ -3,45 +3,47 @@ import { createRoot } from 'react-dom/client';
 import { ProfileView } from './components/ProfileView';
 import { AffiliationsView } from './components/AffiliationsView';
 import { EventsView } from './components/EventsView';
+import { LoginView } from './components/LoginView';
 
 function App() {
   const [activeTab, setActiveTab] = useState('profile');
-  const [members, setMembers] = useState([]);
-  const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch list of members to allow selecting/viewing profile
+  // Check if session is already authenticated on mount
   useEffect(() => {
-    fetch('/api/membres')
-      .then((r) => r.json())
-      .then((data) => {
-        let list = [];
-        if (Array.isArray(data)) {
-          list = data;
-        } else if (data && Array.isArray(data['hydra:member'])) {
-          list = data['hydra:member'];
-        } else if (data && Array.isArray(data.member)) {
-          list = data.member;
-        }
-        setMembers(list);
-        if (list.length > 0) {
-          setSelectedMemberId(list[0].id);
+    fetch('/api/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((userData) => {
+        if (userData && userData.id) {
+          setCurrentUser(userData);
         }
       })
-      .catch((err) => console.error('Error fetching members list:', err))
+      .catch((err) => console.error('Error checking authentication state:', err))
       .finally(() => setLoading(false));
   }, []);
 
-  // Fetch selected member full details
+  // Fetch full details of authenticated member
   useEffect(() => {
-    if (!selectedMemberId) return;
+    if (!currentUser || !currentUser.id) {
+      setMember(null);
+      return;
+    }
 
-    fetch(`/api/membres/${selectedMemberId}`)
+    fetch(`/api/membres/${currentUser.id}`)
       .then((r) => r.json())
       .then((data) => setMember(data))
       .catch((err) => console.error('Error fetching member detail:', err));
-  }, [selectedMemberId]);
+  }, [currentUser]);
+
+  const handleLogout = () => {
+    fetch('/logout')
+      .finally(() => {
+        setCurrentUser(null);
+        setMember(null);
+      });
+  };
 
   if (loading) {
     return (
@@ -50,6 +52,29 @@ function App() {
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Chargement de l'Espace Membre React...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Render Login view if user is not authenticated
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-4">
+        <header className="max-w-6xl w-full mx-auto py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-lg shadow-md">
+              <i className="fa-solid fa-church"></i>
+            </div>
+            <span className="font-extrabold text-slate-800 text-base">Portail Membres Paroisse</span>
+          </div>
+          <a href="/login" class="text-xs font-bold text-indigo-600 hover:underline">Accès Backoffice Admin &rarr;</a>
+        </header>
+
+        <LoginView onLoginSuccess={(userData) => setCurrentUser(userData)} />
+
+        <footer className="text-center text-xs text-slate-400 py-4">
+          Espace Membre React • Authentification Sécurisée
+        </footer>
       </div>
     );
   }
@@ -65,24 +90,28 @@ function App() {
             </div>
             <div>
               <span className="font-extrabold text-slate-800 text-base leading-tight block">PORTAIL MEMBRES</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Application React</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Session Connectée</span>
             </div>
           </div>
 
-          {/* Member Switcher Dropdown */}
+          {/* Connected User Profile Pill & Logout */}
           <div className="flex items-center space-x-3">
-            <span className="text-xs text-slate-400 font-semibold hidden sm:inline">Connecté en tant que:</span>
-            <select
-              value={selectedMemberId || ''}
-              onChange={(e) => setSelectedMemberId(Number(e.target.value))}
-              className="bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+            <div className="flex items-center space-x-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-2xl">
+              <div className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-[10px]">
+                {currentUser.prenom ? currentUser.prenom.charAt(0) : 'M'}
+              </div>
+              <span className="text-xs font-bold text-slate-800">
+                {currentUser.prenom} {currentUser.nom}
+              </span>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition flex items-center space-x-1"
             >
-              {(Array.isArray(members) ? members : []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.prenom} {m.nom} (#{m.id})
-                </option>
-              ))}
-            </select>
+              <i className="fa-solid fa-right-from-bracket text-xs"></i>
+              <span className="hidden sm:inline">Déconnexion</span>
+            </button>
           </div>
         </div>
 
@@ -127,7 +156,7 @@ function App() {
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {activeTab === 'profile' && <ProfileView member={member} />}
         {activeTab === 'affiliations' && <AffiliationsView member={member} />}
-        {activeTab === 'events' && <EventsView memberId={selectedMemberId} />}
+        {activeTab === 'events' && <EventsView memberId={currentUser.id} />}
       </main>
 
       {/* Footer */}
