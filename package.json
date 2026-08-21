@@ -1,0 +1,22 @@
+{
+    "devDependencies": {
+        "@babel/core": "^8.0.1",
+        "@babel/preset-env": "^8.0.0",
+        "@babel/preset-react": "^8.0.1",
+        "@symfony/webpack-encore": "^7.2.0",
+        "babel-plugin-polyfill-corejs3": "^1.0.0",
+        "core-js": "^3.49.0",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "webpack": "^5.82",
+        "webpack-cli": "^7.0.0"
+    },
+    "license": "UNLICENSED",
+    "private": true,
+    "scripts": {
+        "dev-server": "encore dev-server",
+        "dev": "encore dev",
+        "watch": "encore dev --watch",
+        "build": "encore production --progress"
+    }
+}
