@@ -64,7 +64,7 @@
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-2">
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Médias & Galerie</p>
             <div class="flex items-baseline justify-between">
-                <span class="text-3xl font-extrabold text-indigo-600">{{ evenement.mediaUrls|length }}</span>
+                <span class="text-3xl font-extrabold text-indigo-600">{{ evenement.medias|length }}</span>
                 <span class="text-xs text-slate-400">fichiers joints</span>
             </div>
             <p class="text-[11px] text-slate-400">Photos & Vidéos souvenir</p>
@@ -81,7 +81,7 @@
         <div class="flex flex-wrap gap-2 pt-1">
             {% for note in evenement.notes %}
                 <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-sm flex items-center">
-                    <i class="fa-solid fa-quote-left text-amber-400 mr-1.5 text-[10px]"></i> {{ note }}
+                    <i class="fa-solid fa-quote-left text-amber-400 mr-1.5 text-[10px]"></i> {{ note.contenu }}
                 </span>
             {% else %}
                 <p class="text-xs text-slate-400 italic">Aucune note attribuée à cet événement pour l'instant.</p>
@@ -148,12 +148,12 @@
 
         <!-- Media Gallery Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
-            {% for url in evenement.mediaUrls %}
+            {% for media in evenement.medias %}
                 <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-square shadow-sm">
-                    {% if url ends with '.mp4' or url ends with '.webm' or url ends with '.ogg' or url ends with '.mov' %}
-                        <video src="{{ url }}" controls class="w-full h-full object-cover"></video>
+                    {% if media.type == 'video' or media.url ends with '.mp4' or media.url ends with '.webm' or media.url ends with '.ogg' or media.url ends with '.mov' %}
+                        <video src="{{ media.url }}" controls class="w-full h-full object-cover"></video>
                     {% else %}
-                        <img src="{{ url }}" alt="Média Événement" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        <img src="{{ media.url }}" alt="Média Événement" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                     {% endif %}
                 </div>
             {% else %}

@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -37,13 +39,14 @@ class Evenement
     #[Groups(['evenement:read', 'evenement:write'])]
     private ?string $compteRendu = null;
 
-    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
+    #[ORM\ManyToMany(targetEntity: Note::class, cascade: ['persist'])]
+    #[ORM\JoinTable(name: 'evenement_note')]
     #[Groups(['evenement:read', 'evenement:write'])]
-    private array $notes = [];
+    private Collection $notes;
 
-    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
+    #[ORM\OneToMany(mappedBy: 'evenement', targetEntity: Media::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[Groups(['evenement:read', 'evenement:write'])]
-    private array $mediaUrls = [];
+    private Collection $medias;
 
     #[ORM\Column(type: 'datetime', nullable: true)]
     #[Groups(['evenement:read', 'evenement:write'])]
@@ -79,8 +82,8 @@ class Evenement
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->notes = [];
-        $this->mediaUrls = [];
+        $this->notes = new ArrayCollection();
+        $this->medias = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -132,42 +135,77 @@ class Evenement
         return $this;
     }
 
-    public function getNotes(): array
+    /**
+     * @return Collection<int, Note>
+     */
+    public function getNotes(): Collection
     {
         return $this->notes;
     }
 
-    public function setNotes(?array $notes): self
+    public function addNote(Note $note): self
     {
-        $this->notes = $notes ?? [];
-        return $this;
-    }
-
-    public function addNote(string $note): self
-    {
-        if (!in_array($note, $this->notes, true)) {
-            $this->notes[] = $note;
+        if (!$this->notes->contains($note)) {
+            $this->notes->add($note);
         }
         return $this;
     }
 
+    public function removeNote(Note $note): self
+    {
+        $this->notes->removeElement($note);
+        return $this;
+    }
+
+    /**
+     * Legacy getter helper for backwards compatibility returning array of strings
+     */
+    public function getNotesAsArray(): array
+    {
+        $res = [];
+        foreach ($this->notes as $note) {
+            $res[] = $note->getContenu();
+        }
+        return $res;
+    }
+
+    /**
+     * @return Collection<int, Media>
+     */
+    public function getMedias(): Collection
+    {
+        return $this->medias;
+    }
+
+    public function addMedia(Media $media): self
+    {
+        if (!$this->medias->contains($media)) {
+            $this->medias->add($media);
+            $media->setEvenement($this);
+        }
+        return $this;
+    }
+
+    public function removeMedia(Media $media): self
+    {
+        if ($this->medias->removeElement($media)) {
+            if ($media->getEvenement() === $this) {
+                $media->setEvenement(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Legacy getter helper returning array of media URLs for API Platform / serialized compatibility
+     */
     public function getMediaUrls(): array
     {
-        return $this->mediaUrls;
-    }
-
-    public function setMediaUrls(?array $mediaUrls): self
-    {
-        $this->mediaUrls = $mediaUrls ?? [];
-        return $this;
-    }
-
-    public function addMediaUrl(string $mediaUrl): self
-    {
-        if (!in_array($mediaUrl, $this->mediaUrls, true)) {
-            $this->mediaUrls[] = $mediaUrl;
+        $urls = [];
+        foreach ($this->medias as $media) {
+            $urls[] = $media->getUrl();
         }
-        return $this;
+        return $urls;
     }
 
     public function getDateDebut(): ?\DateTimeInterface

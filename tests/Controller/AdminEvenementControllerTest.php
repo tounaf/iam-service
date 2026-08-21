@@ -5,7 +5,9 @@ namespace App\Tests\Controller;
 use App\Controller\AdminEvenementController;
 use App\Entity\Association;
 use App\Entity\Evenement;
+use App\Entity\Media;
 use App\Entity\Membre;
+use App\Entity\Note;
 use App\Entity\Presence;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
@@ -142,6 +144,7 @@ class AdminEvenementControllerTest extends TestCase
         $eventRepo->method('find')->with(1)->willReturn($evenement);
 
         $em->method('getRepository')->with(Evenement::class)->willReturn($eventRepo);
+        $em->expects($this->once())->method('persist');
         $em->expects($this->once())->method('flush');
 
         $controller = new AdminEvenementController();
@@ -154,7 +157,7 @@ class AdminEvenementControllerTest extends TestCase
         $response = $controller->addNote(1, $request, $em);
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        $this->assertContains('Excellent', $evenement->getNotes());
+        $this->assertEquals('Excellent', $evenement->getNotes()->first()->getContenu());
     }
 
     public function testUploadMediaWithUrlIndependently(): void
@@ -167,6 +170,7 @@ class AdminEvenementControllerTest extends TestCase
         $eventRepo->method('find')->with(1)->willReturn($evenement);
 
         $em->method('getRepository')->with(Evenement::class)->willReturn($eventRepo);
+        $em->expects($this->once())->method('persist');
         $em->expects($this->once())->method('flush');
 
         $controller = new AdminEvenementController();
@@ -182,22 +186,25 @@ class AdminEvenementControllerTest extends TestCase
         $this->assertContains('https://example.com/photo.jpg', $evenement->getMediaUrls());
     }
 
-    public function testNullableNotesAndMediaUrlsHandledSafely(): void
+    public function testNotesAndMediasCollectionsHandledSafely(): void
     {
         $evenement = new Evenement();
-        $evenement->setNotes(null);
-        $evenement->setMediaUrls(null);
 
-        $this->assertIsArray($evenement->getNotes());
-        $this->assertEmpty($evenement->getNotes());
+        $this->assertCount(0, $evenement->getNotes());
+        $this->assertCount(0, $evenement->getMedias());
 
-        $this->assertIsArray($evenement->getMediaUrls());
-        $this->assertEmpty($evenement->getMediaUrls());
+        $note = new Note();
+        $note->setContenu('Excellent');
+        $evenement->addNote($note);
 
-        $evenement->addNote('Excellent');
-        $evenement->addMediaUrl('/uploads/events/photo.jpg');
+        $media = new Media();
+        $media->setUrl('/uploads/events/photo.jpg');
+        $media->setType('image');
+        $evenement->addMedia($media);
 
-        $this->assertEquals(['Excellent'], $evenement->getNotes());
+        $this->assertCount(1, $evenement->getNotes());
+        $this->assertCount(1, $evenement->getMedias());
+        $this->assertEquals(['Excellent'], $evenement->getNotesAsArray());
         $this->assertEquals(['/uploads/events/photo.jpg'], $evenement->getMediaUrls());
     }
 }

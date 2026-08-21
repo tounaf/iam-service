@@ -6,7 +6,9 @@ use App\Entity\Association;
 use App\Entity\Evenement;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
+use App\Entity\Media;
 use App\Entity\Membre;
+use App\Entity\Note;
 use App\Entity\Presence;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -99,11 +101,16 @@ class AdminEvenementController extends AbstractController
             throw new NotFoundHttpException('Événement introuvable.');
         }
 
-        $newNote = trim($request->request->get('new_note', ''));
-        if ($newNote !== '') {
-            $evenement->addNote($newNote);
+        $newNoteText = trim($request->request->get('new_note', ''));
+        if ($newNoteText !== '') {
+            $noteEntity = new Note();
+            $noteEntity->setContenu($newNoteText);
+            $em->persist($noteEntity);
+
+            $evenement->addNote($noteEntity);
             $em->flush();
-            $this->addFlash('success', sprintf('Note "%s" ajoutée à l\'événement.', $newNote));
+
+            $this->addFlash('success', sprintf('Note "%s" ajoutée à l\'événement.', $newNoteText));
         }
 
         return $this->redirectToRoute('admin_evenement_show', ['id' => $evenement->getId()]);
@@ -122,7 +129,19 @@ class AdminEvenementController extends AbstractController
         // 1. Text URL input
         $mediaUrlInput = trim($request->request->get('media_url', ''));
         if ($mediaUrlInput !== '') {
-            $evenement->addMediaUrl($mediaUrlInput);
+            $mediaEntity = new Media();
+            $mediaEntity->setUrl($mediaUrlInput);
+
+            // Check if extension indicates video
+            $ext = strtolower(pathinfo($mediaUrlInput, PATHINFO_EXTENSION));
+            if (in_array($ext, ['mp4', 'webm', 'ogg', 'mov', 'avi'], true)) {
+                $mediaEntity->setType('video');
+            } else {
+                $mediaEntity->setType('image');
+            }
+
+            $evenement->addMedia($mediaEntity);
+            $em->persist($mediaEntity);
             $addedCount++;
         }
 
@@ -154,7 +173,17 @@ class AdminEvenementController extends AbstractController
                     $newFilename = uniqid('event_media_') . '.' . $ext;
                     try {
                         $file->move($uploadsDir, $newFilename);
-                        $evenement->addMediaUrl('/uploads/events/' . $newFilename);
+
+                        $mediaEntity = new Media();
+                        $mediaEntity->setUrl('/uploads/events/' . $newFilename);
+                        if (in_array($ext, ['mp4', 'webm', 'ogg', 'mov', 'avi'], true) || str_contains($file->getClientMimeType(), 'video')) {
+                            $mediaEntity->setType('video');
+                        } else {
+                            $mediaEntity->setType('image');
+                        }
+
+                        $evenement->addMedia($mediaEntity);
+                        $em->persist($mediaEntity);
                         $addedCount++;
                     } catch (FileException $e) {
                         $this->addFlash('error', 'Erreur lors du téléversement d\'un média.');
