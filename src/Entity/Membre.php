@@ -70,6 +70,10 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['membre:read', 'membre:write'])]
     private ?string $telephone = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['membre:read', 'membre:write'])]
+    private ?string $adresse = null;
+
     #[ORM\Column(type: 'datetime', nullable: true)]
     #[Groups(['membre:read', 'membre:write'])]
     private ?\DateTimeInterface $dateNaissance = null;
@@ -160,6 +164,17 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
     public function setTelephone(?string $telephone): self
     {
         $this->telephone = $telephone;
+        return $this;
+    }
+
+    public function getAdresse(): ?string
+    {
+        return $this->adresse;
+    }
+
+    public function setAdresse(?string $adresse): self
+    {
+        $this->adresse = $adresse;
         return $this;
     }
 
