@@ -10,18 +10,16 @@ L'administration backoffice (`/admin`) offre un espace de gestion centralisé, m
 * Suivre en temps réel les effectifs et indicateurs clés de la paroisse (`Fiangonana`), des zones géographiques (`Groupe`) et des associations.
 * Gérer la paroisse (`Fiangonana`) et y rattacher / afficher directement ses **Zones & Groupes** et ses **Associations**.
 * Gérer la liste dédiée des **Types d'Événements** (`TypeEvenement` : création, édition, suppression de catégories d'activités comme les Cultes, Formations, Asa, Réunions, Retraites) et attribuer un type lors de la création d'un **Événement** (`Evenement`).
-* Créer des **Événements** en spécifiant librement les **dates de début et de fin** (événements à venir ou enregistrement rétrospectif d'événements passés).
+* Consulter la **Fiche Détail d'un Événement** (`/admin/evenements/{id}`) :
+  * Liste de tous les membres présents ayant pointé par scan QR Code.
+  * Nombre total de présents et **taux de participation** (%) calculé dynamiquement par rapport aux membres de la Paroisse, du Groupe ou de l'Association.
+  * Rédaction d'un **compte-rendu / résumé** détaillé des activités déroulées.
+  * Ajout d'**appréciations et notes dynamiques** (ex: *Très bien*, *Mauvais*, *Excellent*, *Animé*, ou notes personnalisées).
+  * Galerie et téléversement de **médias multiples** (photos et vidéos de l'événement).
 * Inscrire et éditer les fiches des membres avec support de **téléchargement Glisser-Déposer (Drag-and-Drop)** pour la photo de profil.
 * Générer et imprimer les cartes d'identité membres officielles avec QR Code unique.
 * Consulter les statistiques d'assiduité, les rapports d'activités et les taux de participation annuels.
 * Gérer les mandats et droits d'accès via le modèle de sécurité contextuel (CRBAC).
-* Administrer les structures (Paroisses, Zones, Associations) avec onglets dédiés pour :
-  * **Informations Générales**.
-  * **Zones & Groupes** (avec formulaire de création rapide direct).
-  * **Associations Paroissiales** (avec formulaire de création rapide direct).
-  * **Liste des membres rattachés**.
-  * **Comités & Bureau (Président, Secrétaire, Trésorier)** via les attributions de rôles CRBAC.
-  * **Gestion des événements & Présences associées** (création d'événements typés avec sélection de dates et pointages scannés).
 
 ---
 
@@ -35,16 +33,14 @@ graph TD
         Tab3[Onglet 3 : Associations - Affichage + Formulaire d'ajout direct]
         Tab4[Onglet 4 : Liste des Membres Inscrits]
         Tab5[Onglet 5 : Bureau & Comités CRBAC - Président, Secrétaire, Trésorier...]
-        Tab6[Onglet 6 : Événements & Présences - Création d'événements typés avec dates + Pointages Scannés]
+        Tab6[Onglet 6 : Événements & Présences - Carte cliquable vers Fiche Événement]
     end
 
-    Tab2 --> GroupeEntity[Entité Groupe]
-    Tab3 --> AssociationEntity[Entité Association]
-    Tab4 --> MembreEntity[Entité Membre + Drag and Drop Photo Upload]
-    Tab5 --> RoleAssignmentEntity[Entité RoleAssignment & Role]
-    Tab6 --> EvenementEntity[Entité Evenement - Nom, Type, Lieu, Date Début, Date Fin]
-    EvenementEntity --> TypeEvenementEntity[Entité TypeEvenement - CRUD Dédié]
-    Tab6 --> PresenceEntity[Entité Presence & Pointages Scannés]
+    Tab6 --> EvenementDetail[/admin/evenements/id - Fiche Détail Événement]
+    EvenementDetail --> CompteRendu[Compte-Rendu & Résumé]
+    EvenementDetail --> NotesEval[Appréciations & Notes Dynamiques]
+    EvenementDetail --> MediaUpload[Galerie Photos & Vidéos Souvenirs]
+    EvenementDetail --> PresenceList[Membres Présents & Taux de Participation %]
 ```
 
 ---
@@ -52,20 +48,20 @@ graph TD
 ## 3. Architecture Technique & Principes UI
 
 * **Séparation MVC Strict** : Tout le rendu visuel est confiné dans le dossier `templates/admin/` sous forme de templates Twig responsives utilisant Tailwind CSS.
-* **Gestion des Médias / Photos** : Formulaire multipart avec zone interactive de Glisser-Déposer (Drag and Drop) permettant d'uploader des photos de profil stockées sous `public/uploads/membres/`.
-* **Gestion des Types d'Événements (`TypeEvenement`) & Événements (`Evenement`)** :
-  * Module de gestion séparé des types d'événements (`/admin/types-evenement`) avec création, édition et suppression.
-  * Catégorisation dynamique des événements lors de la création sur les paroisses, groupes et associations.
-  * Sélection interactive des dates de début (`date_debut`) et dates de fin (`date_fin`) via des champs HTML5 `datetime-local`.
+* **Fiche Détail d'un Événement (`AdminEvenementController`)** :
+  * Calcul automatique du taux de participation : `(Nombre de Présents / Effectif Total du Périmètre) * 100`.
+  * Support pour l'ajout dynamique de tags / appréciation de l'événement.
+  * Téléversement de photos (`.jpg`, `.png`, `.webp`) et vidéos (`.mp4`, `.webm`) stockées dans `public/uploads/events/`.
 * **Architecture des Controllers** :
   * `AdminDashboardController` (`/admin/dashboard`) : Vue synthétique et tableaux de bord KPI.
   * `AdminFiangonanaController` (`/admin/fiangonana`, `/admin/fiangonana/nouveau`, `/admin/fiangonana/{id}/editer`, `/admin/fiangonana/{id}/nouveau-groupe`, `/admin/fiangonana/{id}/nouvelle-association`, `/admin/fiangonana/{id}/nouvel-evenement`) : Gestion des paroisses.
   * `AdminGroupeController` (`/admin/groupes`, `/admin/groupes/nouveau`, `/admin/groupes/{id}/editer`, `/admin/groupes/{id}/nouvel-evenement`) : Gestion des zones géographiques.
   * `AdminAssociationController` (`/admin/associations`, `/admin/associations/nouveau`, `/admin/associations/{id}/editer`, `/admin/associations/{id}/nouvel-evenement`) : Gestion des associations.
-  * `AdminTypeEvenementController` (`/admin/types-evenement`, `/admin/types-evenement/nouveau`, `/admin/types-evenement/{id}/editer`, `/admin/types-evenement/{id}/supprimer`) : Gestion séparée des types d'événements.
+  * `AdminTypeEvenementController` (`/admin/types-evenement`, `/admin/types-evenement/nouveau`, `/admin/types-evenement/{id}/editer`, `/admin/types-evenement/{id}/supprimer`) : Gestion des types d'événements.
+  * `AdminEvenementController` (`/admin/evenements/{id}`, `/admin/evenements/{id}/update`) : Détail de l'événement, compte-rendu, notes, médias et assiduité.
   * `AdminRoleController` (`/admin/roles`) : Gestion des rôles applicatifs et permissions.
-  * `AdminMembreController` (`/admin/membres`, `/admin/membres/nouveau`, `/admin/membres/{id}/editer`) : Inscription, modification, upload de photo en drag-and-drop, carte membre, QR code et présences.
-  * `AdminPresenceController` (`/admin/presences`) : Consolidation des événements, historique des scans et rapports de participation.
+  * `AdminMembreController` (`/admin/membres`, `/admin/membres/nouveau`, `/admin/membres/{id}/editer`) : Inscription, photo drag-and-drop, carte membre et QR code.
+  * `AdminPresenceController` (`/admin/presences`) : Consolidation des événements, historique des scans et rapports.
 
 ---
 
@@ -82,20 +78,9 @@ graph TD
     Root --> Membres[/admin/membres]
     Root --> Presences[/admin/presences]
 
-    TypeEvenements --> TypeEvenementNew[/admin/types-evenement/nouveau]
-    TypeEvenements --> TypeEvenementEdit[/admin/types-evenement/{id}/editer]
-    TypeEvenements --> TypeEvenementDelete[/admin/types-evenement/{id}/supprimer]
+    FiangonanaEdit --> EventDetailParoisse[/admin/evenements/{id}]
+    GroupeEdit --> EventDetailGroupe[/admin/evenements/{id}]
+    AssociationEdit --> EventDetailAssociation[/admin/evenements/{id}]
 
-    Fiangonana --> FiangonanaEdit[/admin/fiangonana/{id}/editer - Tabs: Groupes, Associations, Membres, Bureau, Événements]
-    FiangonanaEdit --> AddGroupe[/admin/fiangonana/{id}/nouveau-groupe]
-    FiangonanaEdit --> AddAssociation[/admin/fiangonana/{id}/nouvelle-association]
-    FiangonanaEdit --> AddEvenementFiangonana[/admin/fiangonana/{id}/nouvel-evenement]
-
-    Groupes --> GroupeEdit[/admin/groupes/{id}/editer - Tabs: Membres, Bureau, Événements]
-    GroupeEdit --> AddEvenementGroupe[/admin/groupes/{id}/nouvel-evenement]
-
-    Associations --> AssociationEdit[/admin/associations/{id}/editer - Tabs: Membres, Bureau, Événements]
-    AssociationEdit --> AddEvenementAssociation[/admin/associations/{id}/nouvel-evenement]
-
-    Membres --> MembreEdit[/admin/membres/{id}/editer - Photo Drag-and-Drop + Tabs: Général, Roles CRBAC, Présences]
+    EventDetailParoisse --> UpdateEvent[/admin/evenements/{id}/update]
 ```

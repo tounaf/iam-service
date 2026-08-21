@@ -1,0 +1,216 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Détails de l'Événement : {{ evenement.nom }} - Administration{% endblock %}
+{% block header_title %}Fiche & Rapport d'Événement{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Header Event Banner -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center space-x-5">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-2xl border border-indigo-200 shadow-inner">
+                <i class="fa-solid fa-calendar-star text-2xl"></i>
+            </div>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-2xl font-extrabold text-slate-800">{{ evenement.nom }}</h2>
+                    {% if evenement.typeEvenement %}
+                        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            {{ evenement.typeEvenement.nom }}
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-2">
+                    <span><i class="fa-solid fa-location-dot text-indigo-500 mr-1"></i> {{ evenement.lieu|default('Lieu non spécifié') }}</span>
+                    <span><i class="fa-solid fa-layer-group text-indigo-500 mr-1"></i> Rattaché à : {{ scopeName }}</span>
+                    {% if evenement.dateDebut %}
+                        <span><i class="fa-solid fa-clock text-indigo-500 mr-1"></i> {{ evenement.dateDebut|date('d/m/Y H:i') }}{% if evenement.dateFin %} - {{ evenement.dateFin|date('H:i') }}{% endif %}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <a href="javascript:history.back()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-xl transition">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Summary Grid: Participation Rate & Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-2">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Membres Présents</p>
+            <div class="flex items-baseline justify-between">
+                <span class="text-3xl font-extrabold text-slate-800">{{ presentCount }}</span>
+                <span class="text-xs font-bold text-slate-500">sur {{ totalScopeMembers }} membre(s)</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Effectif total de {{ scopeName }}</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-2">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Taux de Participation</p>
+            <div class="flex items-baseline justify-between">
+                <span class="text-3xl font-extrabold text-emerald-600">{{ tauxParticipation }}%</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">Assiduité</span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden mt-1">
+                <div class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: {{ tauxParticipation }}%"></div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-2">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Médias & Galerie</p>
+            <div class="flex items-baseline justify-between">
+                <span class="text-3xl font-extrabold text-indigo-600">{{ evenement.mediaUrls|length }}</span>
+                <span class="text-xs text-slate-400">fichiers joints</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Photos & Vidéos souvenir</p>
+        </div>
+    </div>
+
+    <!-- Section 1: Notes & Evaluation Dynamique de l'Événement -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center">
+            <i class="fa-solid fa-star text-amber-500 mr-2"></i> Évaluation & Appréciation de l'Événement
+        </h4>
+
+        <!-- Tags / Notes list -->
+        <div class="flex flex-wrap gap-2 pt-1">
+            {% for note in evenement.notes %}
+                <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-sm flex items-center">
+                    <i class="fa-solid fa-quote-left text-amber-400 mr-1.5 text-[10px]"></i> {{ note }}
+                </span>
+            {% else %}
+                <p class="text-xs text-slate-400 italic">Aucune note attribuée à cet événement pour l'instant.</p>
+            {% endfor %}
+        </div>
+
+        <!-- Add Note Quick Buttons & Input Form -->
+        <form action="/admin/evenements/{{ evenement.id }}/update" method="POST" class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-3">
+            <input type="text" name="new_note" placeholder="Ajouter une note (ex: Très bien, Animé, Mauvais, Excellent...)" class="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500">
+            <div class="flex items-center space-x-2">
+                <button type="submit" name="new_note" value="Très bien" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] rounded-xl border border-emerald-200 transition">
+                    + Très bien
+                </button>
+                <button type="submit" name="new_note" value="Animé" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] rounded-xl border border-indigo-200 transition">
+                    + Animé
+                </button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition">
+                    Ajouter Note
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Section 2: Compte-Rendu / Description de ce qui s'est passé -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center">
+            <i class="fa-solid fa-file-pen text-indigo-500 mr-2"></i> Compte-Rendu & Résumé de l'Activité
+        </h4>
+
+        {% if evenement.compteRendu %}
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                {{ evenement.compteRendu }}
+            </div>
+        {% endif %}
+
+        <form action="/admin/evenements/{{ evenement.id }}/update" method="POST" class="space-y-3 pt-2">
+            <textarea name="compte_rendu" rows="4" placeholder="Saisissez un compte-rendu détaillé des déroulements, décisions ou faits marquants de cet événement..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-xs text-slate-700">{{ evenement.compteRendu }}</textarea>
+            <div class="flex justify-end">
+                <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition">
+                    Enregistrer le Compte-Rendu
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Section 3: Multiple Media Upload & Gallery (Photos / Videos) -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center">
+            <i class="fa-solid fa-photo-film text-purple-500 mr-2"></i> Galerie Photos & Vidéos Souvenirs
+        </h4>
+
+        <!-- Upload Form -->
+        <form action="/admin/evenements/{{ evenement.id }}/update" method="POST" enctype="multipart/form-data" class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 flex flex-col sm:flex-row items-center gap-3">
+            <input type="file" name="media_files[]" multiple accept="image/*,video/*" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition whitespace-nowrap">
+                <i class="fa-solid fa-upload mr-1"></i> Uploader Médias
+            </button>
+        </form>
+
+        <!-- Media Gallery Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
+            {% for url in evenement.mediaUrls %}
+                <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-square shadow-sm">
+                    {% if url ends with '.mp4' or url ends with '.webm' %}
+                        <video src="{{ url }}" controls class="w-full h-full object-cover"></video>
+                    {% else %}
+                        <img src="{{ url }}" alt="Média Événement" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="col-span-full py-6 text-center text-slate-400 text-xs">
+                    Aucun média photo/vidéo téléversé pour cet événement.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Section 4: Liste des Membres Présents -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-clipboard-user text-emerald-500 mr-2"></i> Liste des Membres Présents ({{ presentCount }})
+            </h4>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                    <tr>
+                        <th class="py-3.5 px-6">ID & Membre</th>
+                        <th class="py-3.5 px-6">Paroisse / Zone</th>
+                        <th class="py-3.5 px-6">Heure du Pointage</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for p in presences %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="py-4 px-6 flex items-center space-x-3">
+                                {% if p.membre.photoUrl %}
+                                    <img src="{{ p.membre.photoUrl }}" class="w-8 h-8 rounded-full object-cover border border-slate-200">
+                                {% else %}
+                                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs">
+                                        {{ p.membre.prenom|slice(0,1) }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <a href="/admin/membres/{{ p.membre.id }}/editer" class="font-bold text-slate-800 hover:text-indigo-600 hover:underline">
+                                        {{ p.membre.prenom }} {{ p.membre.nom }}
+                                    </a>
+                                    <p class="text-[11px] text-slate-400">ID #{{ p.membre.id }}</p>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6 text-xs">
+                                <span class="font-medium text-slate-700">{{ p.membre.fiangonana ? p.membre.fiangonana.nom : 'N/A' }}</span>
+                                <p class="text-slate-400 text-[11px]">{{ p.membre.zoneGeographique ? p.membre.zoneGeographique.nom : '' }}</p>
+                            </td>
+                            <td class="py-4 px-6 text-xs font-mono text-slate-500">
+                                {{ p.scannedAt|date('d/m/Y H:i:s') }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="py-8 text-center text-slate-400">Aucun pointage de présence scanné pour cet événement.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

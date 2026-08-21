@@ -33,6 +33,18 @@ class Evenement
     #[Groups(['evenement:read', 'evenement:write'])]
     private ?string $description = null;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['evenement:read', 'evenement:write'])]
+    private ?string $compteRendu = null;
+
+    #[ORM\Column(type: 'json')]
+    #[Groups(['evenement:read', 'evenement:write'])]
+    private array $notes = [];
+
+    #[ORM\Column(type: 'json')]
+    #[Groups(['evenement:read', 'evenement:write'])]
+    private array $mediaUrls = [];
+
     #[ORM\Column(type: 'datetime', nullable: true)]
     #[Groups(['evenement:read', 'evenement:write'])]
     private ?\DateTimeInterface $dateDebut = null;
@@ -67,6 +79,8 @@ class Evenement
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->notes = [];
+        $this->mediaUrls = [];
     }
 
     public function getId(): ?int
@@ -104,6 +118,55 @@ class Evenement
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+        return $this;
+    }
+
+    public function getCompteRendu(): ?string
+    {
+        return $this->compteRendu;
+    }
+
+    public function setCompteRendu(?string $compteRendu): self
+    {
+        $this->compteRendu = $compteRendu;
+        return $this;
+    }
+
+    public function getNotes(): array
+    {
+        return $this->notes;
+    }
+
+    public function setNotes(array $notes): self
+    {
+        $this->notes = $notes;
+        return $this;
+    }
+
+    public function addNote(string $note): self
+    {
+        if (!in_array($note, $this->notes, true)) {
+            $this->notes[] = $note;
+        }
+        return $this;
+    }
+
+    public function getMediaUrls(): array
+    {
+        return $this->mediaUrls;
+    }
+
+    public function setMediaUrls(array $mediaUrls): self
+    {
+        $this->mediaUrls = $mediaUrls;
+        return $this;
+    }
+
+    public function addMediaUrl(string $mediaUrl): self
+    {
+        if (!in_array($mediaUrl, $this->mediaUrls, true)) {
+            $this->mediaUrls[] = $mediaUrl;
+        }
         return $this;
     }
 
