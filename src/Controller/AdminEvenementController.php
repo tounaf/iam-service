@@ -11,6 +11,7 @@ use App\Entity\Presence;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -116,31 +117,55 @@ class AdminEvenementController extends AbstractController
             throw new NotFoundHttpException('Événement introuvable.');
         }
 
-        $mediaFiles = $request->files->get('media_files');
-        if ($mediaFiles && is_array($mediaFiles)) {
+        $addedCount = 0;
+
+        // 1. Text URL input
+        $mediaUrlInput = trim($request->request->get('media_url', ''));
+        if ($mediaUrlInput !== '') {
+            $evenement->addMediaUrl($mediaUrlInput);
+            $addedCount++;
+        }
+
+        // 2. Gather files from all possible form keys
+        $filesToProcess = [];
+        $rawFiles = $request->files->all();
+
+        foreach ($rawFiles as $key => $fileOrArray) {
+            if (is_array($fileOrArray)) {
+                foreach ($fileOrArray as $f) {
+                    if ($f instanceof UploadedFile) {
+                        $filesToProcess[] = $f;
+                    }
+                }
+            } elseif ($fileOrArray instanceof UploadedFile) {
+                $filesToProcess[] = $fileOrArray;
+            }
+        }
+
+        if (!empty($filesToProcess)) {
             $uploadsDir = $this->getParameter('kernel.project_dir') . '/public/uploads/events';
             if (!is_dir($uploadsDir)) {
                 mkdir($uploadsDir, 0777, true);
             }
 
-            $count = 0;
-            foreach ($mediaFiles as $file) {
-                if ($file) {
-                    $newFilename = uniqid('event_media_') . '.' . ($file->guessExtension() ?: 'bin');
+            foreach ($filesToProcess as $file) {
+                if ($file->isValid()) {
+                    $ext = strtolower($file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'bin');
+                    $newFilename = uniqid('event_media_') . '.' . $ext;
                     try {
                         $file->move($uploadsDir, $newFilename);
                         $evenement->addMediaUrl('/uploads/events/' . $newFilename);
-                        $count++;
+                        $addedCount++;
                     } catch (FileException $e) {
-                        $this->addFlash('error', 'Erreur lors de l\'upload d\'un média.');
+                        $this->addFlash('error', 'Erreur lors du téléversement d\'un média.');
                     }
                 }
             }
+        }
 
-            if ($count > 0) {
-                $em->flush();
-                $this->addFlash('success', sprintf('%d média(s) téléversé(s) avec succès.', $count));
-            }
+        if ($addedCount > 0) {
+            $em->flush();
+            $this->addFlash('success', sprintf('%d média(s) / lien(s) ajouté(s) à l\'événement avec succès.', $addedCount));
         }
 
         return $this->redirectToRoute('admin_evenement_show', ['id' => $evenement->getId()]);

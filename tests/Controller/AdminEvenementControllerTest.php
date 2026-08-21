@@ -157,6 +157,31 @@ class AdminEvenementControllerTest extends TestCase
         $this->assertContains('Excellent', $evenement->getNotes());
     }
 
+    public function testUploadMediaWithUrlIndependently(): void
+    {
+        $evenement = new Evenement();
+        $evenement->setNom('Formation');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $eventRepo = $this->createMock(EntityRepository::class);
+        $eventRepo->method('find')->with(1)->willReturn($evenement);
+
+        $em->method('getRepository')->with(Evenement::class)->willReturn($eventRepo);
+        $em->expects($this->once())->method('flush');
+
+        $controller = new AdminEvenementController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/evenements/1/upload-media', 'POST', [
+            'media_url' => 'https://example.com/photo.jpg'
+        ]);
+
+        $response = $controller->uploadMedia(1, $request, $em);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertContains('https://example.com/photo.jpg', $evenement->getMediaUrls());
+    }
+
     public function testNullableNotesAndMediaUrlsHandledSafely(): void
     {
         $evenement = new Evenement();

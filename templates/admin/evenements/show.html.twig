@@ -134,10 +134,15 @@
         </h4>
 
         <!-- Upload Form -->
-        <form action="/admin/evenements/{{ evenement.id }}/upload-media" method="POST" enctype="multipart/form-data" class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 flex flex-col sm:flex-row items-center gap-3">
-            <input type="file" name="media_files[]" multiple accept="image/*,video/*" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700">
-            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition whitespace-nowrap">
-                <i class="fa-solid fa-upload mr-1"></i> Uploader Médias
+        <form action="/admin/evenements/{{ evenement.id }}/upload-media" method="POST" enctype="multipart/form-data" class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 flex flex-col md:flex-row items-center gap-3">
+            <div class="flex-1 w-full">
+                <input type="file" name="media_files[]" multiple accept="image/*,video/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700">
+            </div>
+            <div class="flex-1 w-full">
+                <input type="text" name="media_url" placeholder="Ou coller une URL d'image/vidéo externe" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500">
+            </div>
+            <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition whitespace-nowrap">
+                <i class="fa-solid fa-upload mr-1"></i> Ajouter Médias
             </button>
         </form>
 
@@ -145,7 +150,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
             {% for url in evenement.mediaUrls %}
                 <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-square shadow-sm">
-                    {% if url ends with '.mp4' or url ends with '.webm' %}
+                    {% if url ends with '.mp4' or url ends with '.webm' or url ends with '.ogg' or url ends with '.mov' %}
                         <video src="{{ url }}" controls class="w-full h-full object-cover"></video>
                     {% else %}
                         <img src="{{ url }}" alt="Média Événement" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
