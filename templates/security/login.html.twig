@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Application Paroissiale</title>
+    <!-- Tailwind CSS & FontAwesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="h-full bg-slate-50 flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 space-y-6">
+
+        <!-- Header Logo -->
+        <div class="text-center space-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-2xl mx-auto shadow-lg shadow-indigo-200">
+                <i class="fa-solid fa-church"></i>
+            </div>
+            <h1 class="text-2xl font-extrabold text-slate-800">Espace Connexion</h1>
+            <p class="text-xs text-slate-500">Connectez-vous pour accéder au Backoffice et à votre Espace Membre</p>
+        </div>
+
+        {% if error %}
+            <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-xs font-semibold flex items-center space-x-2">
+                <i class="fa-solid fa-circle-exclamation text-rose-500"></i>
+                <span>{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+            </div>
+        {% endif %}
+
+        <form action="{{ path('app_login') }}" method="post" class="space-y-4">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="space-y-1">
+                <label for="username" class="text-xs font-bold text-slate-700 uppercase tracking-wider block">Adresse Email</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                        <i class="fa-solid fa-envelope text-xs"></i>
+                    </span>
+                    <input type="email" value="{{ last_username }}" name="_username" id="username" required autofocus placeholder="votre.email@exemple.com" class="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white transition">
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label for="password" class="text-xs font-bold text-slate-700 uppercase tracking-wider block">Mot de Passe</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                        <i class="fa-solid fa-lock text-xs"></i>
+                    </span>
+                    <input type="password" name="_password" id="password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white transition">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-200 transition flex items-center justify-center space-x-2">
+                <span>Se Connecter</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+        </form>
+
+        <div class="pt-4 border-t border-slate-100 text-center">
+            <a href="/espace-membre" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                Accéder directement à l'Espace Membre React &rarr;
+            </a>
+        </div>
+
+    </div>
+
+</body>
+</html>

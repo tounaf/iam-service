@@ -16,7 +16,14 @@ function App() {
     fetch('/api/membres')
       .then((r) => r.json())
       .then((data) => {
-        const list = data['hydra:member'] || data || [];
+        let list = [];
+        if (Array.isArray(data)) {
+          list = data;
+        } else if (data && Array.isArray(data['hydra:member'])) {
+          list = data['hydra:member'];
+        } else if (data && Array.isArray(data.member)) {
+          list = data.member;
+        }
         setMembers(list);
         if (list.length > 0) {
           setSelectedMemberId(list[0].id);
@@ -70,7 +77,7 @@ function App() {
               onChange={(e) => setSelectedMemberId(Number(e.target.value))}
               className="bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
             >
-              {members.map((m) => (
+              {(Array.isArray(members) ? members : []).map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.prenom} {m.nom} (#{m.id})
                 </option>

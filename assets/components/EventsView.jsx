@@ -12,13 +12,29 @@ export function EventsView({ memberId }) {
 
     setLoading(true);
     Promise.all([
-      fetch(`/api/evenements`).then((r) => (r.ok ? r.json() : { 'hydra:member': [] })),
-      fetch(`/api/presences?membre=${memberId}`).then((r) => (r.ok ? r.json() : { 'hydra:member': [] })),
+      fetch(`/api/evenements`).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/presences?membre=${memberId}`).then((r) => (r.ok ? r.json() : [])),
       fetch(`/api/membres/${memberId}/participation-stats`).then((r) => (r.ok ? r.json() : null)),
     ])
       .then(([eventsData, presencesData, statsData]) => {
-        const eventList = eventsData['hydra:member'] || eventsData || [];
-        const presenceList = presencesData['hydra:member'] || presencesData || [];
+        let eventList = [];
+        if (Array.isArray(eventsData)) {
+          eventList = eventsData;
+        } else if (eventsData && Array.isArray(eventsData['hydra:member'])) {
+          eventList = eventsData['hydra:member'];
+        } else if (eventsData && Array.isArray(eventsData.member)) {
+          eventList = eventsData.member;
+        }
+
+        let presenceList = [];
+        if (Array.isArray(presencesData)) {
+          presenceList = presencesData;
+        } else if (presencesData && Array.isArray(presencesData['hydra:member'])) {
+          presenceList = presencesData['hydra:member'];
+        } else if (presencesData && Array.isArray(presencesData.member)) {
+          presenceList = presencesData.member;
+        }
+
         setEvents(eventList);
         setPresences(presenceList);
         setStats(statsData);
@@ -41,7 +57,7 @@ export function EventsView({ memberId }) {
     return presences.some((p) => p.activityName && p.activityName.toLowerCase() === event.nom.toLowerCase());
   };
 
-  const filteredEvents = events.filter((event) => {
+  const filteredEvents = (Array.isArray(events) ? events : []).filter((event) => {
     const present = isPresentForEvent(event);
     if (filter === 'attended') return present;
     if (filter === 'missed') return !present;
