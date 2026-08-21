@@ -107,7 +107,7 @@ class AdminEvenementControllerTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
     }
 
-    public function testUpdateAddsCompteRenduAndNotes(): void
+    public function testUpdateCompteRenduIndependently(): void
     {
         $evenement = new Evenement();
         $evenement->setNom('Formation');
@@ -122,16 +122,39 @@ class AdminEvenementControllerTest extends TestCase
         $controller = new AdminEvenementController();
         $controller->setContainer($this->createMockContainer());
 
-        $request = Request::create('/admin/evenements/1/update', 'POST', [
-            'compte_rendu' => 'Formation très dynamique avec 15 jeunes.',
-            'new_note' => 'Très bien'
+        $request = Request::create('/admin/evenements/1/compte-rendu', 'POST', [
+            'compte_rendu' => 'Compte-rendu autonome.'
         ]);
 
-        $response = $controller->update(1, $request, $em);
+        $response = $controller->updateCompteRendu(1, $request, $em);
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        $this->assertEquals('Formation très dynamique avec 15 jeunes.', $evenement->getCompteRendu());
-        $this->assertContains('Très bien', $evenement->getNotes());
+        $this->assertEquals('Compte-rendu autonome.', $evenement->getCompteRendu());
+    }
+
+    public function testAddNoteIndependently(): void
+    {
+        $evenement = new Evenement();
+        $evenement->setNom('Formation');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $eventRepo = $this->createMock(EntityRepository::class);
+        $eventRepo->method('find')->with(1)->willReturn($evenement);
+
+        $em->method('getRepository')->with(Evenement::class)->willReturn($eventRepo);
+        $em->expects($this->once())->method('flush');
+
+        $controller = new AdminEvenementController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/evenements/1/add-note', 'POST', [
+            'new_note' => 'Excellent'
+        ]);
+
+        $response = $controller->addNote(1, $request, $em);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertContains('Excellent', $evenement->getNotes());
     }
 
     public function testNullableNotesAndMediaUrlsHandledSafely(): void

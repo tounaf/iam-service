@@ -72,8 +72,8 @@ class AdminEvenementController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/evenements/{id}/update', name: 'admin_evenement_update', methods: ['POST'])]
-    public function update(int $id, Request $request, EntityManagerInterface $em): Response
+    #[Route('/admin/evenements/{id}/compte-rendu', name: 'admin_evenement_update_compte_rendu', methods: ['POST'])]
+    public function updateCompteRendu(int $id, Request $request, EntityManagerInterface $em): Response
     {
         $evenement = $em->getRepository(Evenement::class)->find($id);
         if (!$evenement) {
@@ -81,16 +81,41 @@ class AdminEvenementController extends AbstractController
         }
 
         $compteRendu = trim($request->request->get('compte_rendu', ''));
-        if ($compteRendu !== '') {
-            $evenement->setCompteRendu($compteRendu);
+        $evenement->setCompteRendu($compteRendu ?: null);
+
+        $em->flush();
+
+        $this->addFlash('success', 'Compte-rendu de l\'événement mis à jour avec succès.');
+
+        return $this->redirectToRoute('admin_evenement_show', ['id' => $evenement->getId()]);
+    }
+
+    #[Route('/admin/evenements/{id}/add-note', name: 'admin_evenement_add_note', methods: ['POST'])]
+    public function addNote(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $evenement = $em->getRepository(Evenement::class)->find($id);
+        if (!$evenement) {
+            throw new NotFoundHttpException('Événement introuvable.');
         }
 
         $newNote = trim($request->request->get('new_note', ''));
         if ($newNote !== '') {
             $evenement->addNote($newNote);
+            $em->flush();
+            $this->addFlash('success', sprintf('Note "%s" ajoutée à l\'événement.', $newNote));
         }
 
-        // Handle multiple media file uploads (photos / videos)
+        return $this->redirectToRoute('admin_evenement_show', ['id' => $evenement->getId()]);
+    }
+
+    #[Route('/admin/evenements/{id}/upload-media', name: 'admin_evenement_upload_media', methods: ['POST'])]
+    public function uploadMedia(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $evenement = $em->getRepository(Evenement::class)->find($id);
+        if (!$evenement) {
+            throw new NotFoundHttpException('Événement introuvable.');
+        }
+
         $mediaFiles = $request->files->get('media_files');
         if ($mediaFiles && is_array($mediaFiles)) {
             $uploadsDir = $this->getParameter('kernel.project_dir') . '/public/uploads/events';
@@ -98,23 +123,32 @@ class AdminEvenementController extends AbstractController
                 mkdir($uploadsDir, 0777, true);
             }
 
+            $count = 0;
             foreach ($mediaFiles as $file) {
                 if ($file) {
                     $newFilename = uniqid('event_media_') . '.' . ($file->guessExtension() ?: 'bin');
                     try {
                         $file->move($uploadsDir, $newFilename);
                         $evenement->addMediaUrl('/uploads/events/' . $newFilename);
+                        $count++;
                     } catch (FileException $e) {
                         $this->addFlash('error', 'Erreur lors de l\'upload d\'un média.');
                     }
                 }
             }
+
+            if ($count > 0) {
+                $em->flush();
+                $this->addFlash('success', sprintf('%d média(s) téléversé(s) avec succès.', $count));
+            }
         }
 
-        $em->flush();
-
-        $this->addFlash('success', 'Fiche d\'événement mise à jour avec succès.');
-
         return $this->redirectToRoute('admin_evenement_show', ['id' => $evenement->getId()]);
+    }
+
+    #[Route('/admin/evenements/{id}/update', name: 'admin_evenement_update', methods: ['POST'])]
+    public function update(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        return $this->updateCompteRendu($id, $request, $em);
     }
 }
