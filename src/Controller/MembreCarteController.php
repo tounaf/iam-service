@@ -6,6 +6,8 @@ use App\Entity\Membre;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
@@ -21,7 +23,7 @@ class MembreCarteController extends AbstractController
     }
 
     #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
-    public function __invoke(?Membre $membre): Response
+    public function __invoke(?Membre $membre, ?Request $request = null): Response
     {
         if (!$membre) {
             throw new NotFoundHttpException('Membre non trouvé.');
@@ -55,6 +57,34 @@ class MembreCarteController extends AbstractController
         $prenom = $membre->getPrenom() ?? '';
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
+
+        if ($request === null) {
+            $request = Request::createFromGlobals();
+        }
+
+        $acceptHeader = $request->headers->get('Accept', '');
+        $format = strtolower((string) $request->query->get('format', ''));
+
+        if ($format === 'json' || str_contains($acceptHeader, 'application/json')) {
+            $host = $request->getSchemeAndHttpHost() ?: 'http://localhost';
+            return new JsonResponse([
+                'memberId' => $membre->getId(),
+                'nom' => $nom,
+                'prenom' => $prenom,
+                'email' => $email,
+                'telephone' => $telephone,
+                'fiangonanaNom' => $fiangonanaNom,
+                'groupeNom' => $groupeNom,
+                'associations' => $associationsList,
+                'associationsStr' => $associationsStr,
+                'qrCodeToken' => $token,
+                'qrCodeBase64' => $qrCodeBase64,
+                'qrCodeUrl' => sprintf('/api/membres/%d/qr-code', $membre->getId()),
+                'scanUrl' => $token !== 'N/A' ? sprintf('%s/membres/scan/%s', $host, $token) : null,
+            ], Response::HTTP_OK, [
+                'Cache-Control' => 'public, max-age=3600'
+            ]);
+        }
 
         $html = $this->twig->render('membre/carte.html.twig', [
             'nom' => $nom,
