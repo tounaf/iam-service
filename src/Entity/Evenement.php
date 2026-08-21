@@ -37,13 +37,13 @@ class Evenement
     #[Groups(['evenement:read', 'evenement:write'])]
     private ?string $compteRendu = null;
 
-    #[ORM\Column(type: 'json')]
+    #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['evenement:read', 'evenement:write'])]
-    private array $notes = [];
+    private ?array $notes = [];
 
-    #[ORM\Column(type: 'json')]
+    #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['evenement:read', 'evenement:write'])]
-    private array $mediaUrls = [];
+    private ?array $mediaUrls = [];
 
     #[ORM\Column(type: 'datetime', nullable: true)]
     #[Groups(['evenement:read', 'evenement:write'])]
@@ -134,38 +134,42 @@ class Evenement
 
     public function getNotes(): array
     {
-        return $this->notes;
+        return $this->notes ?? [];
     }
 
-    public function setNotes(array $notes): self
+    public function setNotes(?array $notes): self
     {
-        $this->notes = $notes;
+        $this->notes = $notes ?? [];
         return $this;
     }
 
     public function addNote(string $note): self
     {
-        if (!in_array($note, $this->notes, true)) {
-            $this->notes[] = $note;
+        $currentNotes = $this->getNotes();
+        if (!in_array($note, $currentNotes, true)) {
+            $currentNotes[] = $note;
+            $this->notes = $currentNotes;
         }
         return $this;
     }
 
     public function getMediaUrls(): array
     {
-        return $this->mediaUrls;
+        return $this->mediaUrls ?? [];
     }
 
-    public function setMediaUrls(array $mediaUrls): self
+    public function setMediaUrls(?array $mediaUrls): self
     {
-        $this->mediaUrls = $mediaUrls;
+        $this->mediaUrls = $mediaUrls ?? [];
         return $this;
     }
 
     public function addMediaUrl(string $mediaUrl): self
     {
-        if (!in_array($mediaUrl, $this->mediaUrls, true)) {
-            $this->mediaUrls[] = $mediaUrl;
+        $currentMediaUrls = $this->getMediaUrls();
+        if (!in_array($mediaUrl, $currentMediaUrls, true)) {
+            $currentMediaUrls[] = $mediaUrl;
+            $this->mediaUrls = $currentMediaUrls;
         }
         return $this;
     }

@@ -133,4 +133,23 @@ class AdminEvenementControllerTest extends TestCase
         $this->assertEquals('Formation très dynamique avec 15 jeunes.', $evenement->getCompteRendu());
         $this->assertContains('Très bien', $evenement->getNotes());
     }
+
+    public function testNullableNotesAndMediaUrlsHandledSafely(): void
+    {
+        $evenement = new Evenement();
+        $evenement->setNotes(null);
+        $evenement->setMediaUrls(null);
+
+        $this->assertIsArray($evenement->getNotes());
+        $this->assertEmpty($evenement->getNotes());
+
+        $this->assertIsArray($evenement->getMediaUrls());
+        $this->assertEmpty($evenement->getMediaUrls());
+
+        $evenement->addNote('Excellent');
+        $evenement->addMediaUrl('/uploads/events/photo.jpg');
+
+        $this->assertEquals(['Excellent'], $evenement->getNotes());
+        $this->assertEquals(['/uploads/events/photo.jpg'], $evenement->getMediaUrls());
+    }
 }
