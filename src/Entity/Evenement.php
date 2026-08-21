@@ -37,13 +37,13 @@ class Evenement
     #[Groups(['evenement:read', 'evenement:write'])]
     private ?string $compteRendu = null;
 
-    #[ORM\Column(type: 'json', nullable: true)]
+    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
     #[Groups(['evenement:read', 'evenement:write'])]
-    private ?array $notes = [];
+    private array $notes = [];
 
-    #[ORM\Column(type: 'json', nullable: true)]
+    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
     #[Groups(['evenement:read', 'evenement:write'])]
-    private ?array $mediaUrls = [];
+    private array $mediaUrls = [];
 
     #[ORM\Column(type: 'datetime', nullable: true)]
     #[Groups(['evenement:read', 'evenement:write'])]
@@ -134,7 +134,7 @@ class Evenement
 
     public function getNotes(): array
     {
-        return $this->notes ?? [];
+        return $this->notes;
     }
 
     public function setNotes(?array $notes): self
@@ -145,17 +145,15 @@ class Evenement
 
     public function addNote(string $note): self
     {
-        $currentNotes = $this->getNotes();
-        if (!in_array($note, $currentNotes, true)) {
-            $currentNotes[] = $note;
-            $this->notes = $currentNotes;
+        if (!in_array($note, $this->notes, true)) {
+            $this->notes[] = $note;
         }
         return $this;
     }
 
     public function getMediaUrls(): array
     {
-        return $this->mediaUrls ?? [];
+        return $this->mediaUrls;
     }
 
     public function setMediaUrls(?array $mediaUrls): self
@@ -166,10 +164,8 @@ class Evenement
 
     public function addMediaUrl(string $mediaUrl): self
     {
-        $currentMediaUrls = $this->getMediaUrls();
-        if (!in_array($mediaUrl, $currentMediaUrls, true)) {
-            $currentMediaUrls[] = $mediaUrl;
-            $this->mediaUrls = $currentMediaUrls;
+        if (!in_array($mediaUrl, $this->mediaUrls, true)) {
+            $this->mediaUrls[] = $mediaUrl;
         }
         return $this;
     }
