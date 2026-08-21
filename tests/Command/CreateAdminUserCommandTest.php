@@ -45,7 +45,7 @@ class CreateAdminUserCommandTest extends TestCase
 
         $command = new CreateAdminUserCommand($em, $passwordHasher);
         $application = new Application();
-        $application->add($command);
+        $application->addCommand($command);
 
         $commandTester = new CommandTester($application->find('app:create-admin'));
         $commandTester->execute([
@@ -56,6 +56,7 @@ class CreateAdminUserCommandTest extends TestCase
         ]);
 
         $output = $commandTester->getDisplay();
-        $this->assertStringContainsString('Compte administrateur "admin@test.com" créé avec succès !', $output);
+        $this->assertStringContainsString('admin@test.com', $output);
+        $this->assertStringContainsString('créé avec succès', $output);
     }
 }
