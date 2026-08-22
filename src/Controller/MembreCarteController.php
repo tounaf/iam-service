@@ -6,6 +6,8 @@ use App\Entity\Membre;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
@@ -21,10 +23,14 @@ class MembreCarteController extends AbstractController
     }
 
     #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
-    public function __invoke(?Membre $membre): Response
+    public function __invoke(?Membre $membre, ?Request $request = null): Response
     {
         if (!$membre) {
             throw new NotFoundHttpException('Membre non trouvé.');
+        }
+
+        if ($request === null) {
+            $request = Request::createFromGlobals();
         }
 
         $token = $membre->getQrCodeToken() ?: 'N/A';
@@ -55,6 +61,29 @@ class MembreCarteController extends AbstractController
         $prenom = $membre->getPrenom() ?? '';
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
+
+        // Check if JSON response is requested
+        $format = strtolower($request->query->get('format', ''));
+        $acceptHeader = $request->headers->get('Accept', '');
+        $wantsJson = $format === 'json' || str_contains($acceptHeader, 'application/json');
+
+        if ($wantsJson) {
+            return new JsonResponse([
+                'id' => $membre->getId(),
+                'nom' => $nom,
+                'prenom' => $prenom,
+                'email' => $email,
+                'telephone' => $telephone,
+                'fiangonanaNom' => $fiangonanaNom,
+                'groupeNom' => $groupeNom,
+                'associations' => $associationsList,
+                'associationsStr' => $associationsStr,
+                'qrCodeToken' => $token,
+                'qrCodeBase64' => $qrCodeBase64,
+            ], Response::HTTP_OK, [
+                'Cache-Control' => 'public, max-age=3600'
+            ]);
+        }
 
         $html = $this->twig->render('membre/carte.html.twig', [
             'nom' => $nom,

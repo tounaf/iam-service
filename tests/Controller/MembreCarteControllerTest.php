@@ -6,8 +6,11 @@ use App\Controller\MembreCarteController;
 use App\Entity\Membre;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
+use App\Entity\Association;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Twig\Environment;
@@ -58,6 +61,50 @@ class MembreCarteControllerTest extends TestCase
         $this->assertStringContainsString('Nirina Ratsimbazafy', $content);
         $this->assertStringContainsString('Test Church', $content);
         $this->assertStringContainsString('Test Geographic Zone', $content);
+    }
+
+    public function testInvokeReturnsJsonResponseWhenJsonRequested(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse Central');
+
+        $groupe = new Groupe();
+        $groupe->setNom('Zone Analamanga');
+
+        $assoc = new Association();
+        $assoc->setNom('Jeunesse KT');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(10);
+        $member->method('getNom')->willReturn('Rasoa');
+        $member->method('getPrenom')->willReturn('Bako');
+        $member->method('getEmail')->willReturn('bako@example.com');
+        $member->method('getTelephone')->willReturn('+261340000000');
+        $member->method('getQrCodeToken')->willReturn('token-123-abc');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getZoneGeographique')->willReturn($groupe);
+        $member->method('getAssociations')->willReturn(new ArrayCollection([$assoc]));
+
+        $twig = $this->createMock(Environment::class);
+        $controller = new MembreCarteController($twig);
+
+        $request = Request::create('/api/membres/10/carte?format=json');
+        $response = $controller->__invoke($member, $request);
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertEquals(10, $data['id']);
+        $this->assertEquals('Rasoa', $data['nom']);
+        $this->assertEquals('Bako', $data['prenom']);
+        $this->assertEquals('bako@example.com', $data['email']);
+        $this->assertEquals('+261340000000', $data['telephone']);
+        $this->assertEquals('Paroisse Central', $data['fiangonanaNom']);
+        $this->assertEquals('Zone Analamanga', $data['groupeNom']);
+        $this->assertEquals(['Jeunesse KT'], $data['associations']);
+        $this->assertEquals('token-123-abc', $data['qrCodeToken']);
+        $this->assertNotEmpty($data['qrCodeBase64']);
     }
 
     public function testInvokeThrowsNotFoundForNullMember(): void
