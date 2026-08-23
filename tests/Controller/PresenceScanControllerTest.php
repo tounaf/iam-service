@@ -8,6 +8,7 @@ use App\Entity\Presence;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -44,6 +45,31 @@ class PresenceScanControllerTest extends TestCase
 
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
         $this->assertStringContainsString('Code QR non reconnu', $response->getContent());
+    }
+
+    public function testInvokeReturnsNotFoundJsonForInvalidTokenWhenRequested(): void
+    {
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $repository = $this->createMock(EntityRepository::class);
+
+        $repository->method('findOneBy')
+            ->with(['qrCodeToken' => 'invalid_token'])
+            ->willReturn(null);
+
+        $entityManager->method('getRepository')
+            ->with(Membre::class)
+            ->willReturn($repository);
+
+        $twig = $this->createMock(Environment::class);
+        $request = new Request(['format' => 'json']);
+        $controller = new PresenceScanController($twig);
+
+        $response = $controller->__invoke('invalid_token', $request, $entityManager);
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
+        $data = json_decode($response->getContent(), true);
+        $this->assertEquals('Code QR non reconnu', $data['error']);
     }
 
     public function testInvokeReturnsGetForm(): void
@@ -165,5 +191,42 @@ class PresenceScanControllerTest extends TestCase
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
         $this->assertStringContainsString('Présence Validée !', $response->getContent());
         $this->assertStringContainsString('Formation des Jeunes 2026', $response->getContent());
+    }
+
+    public function testInvokeSavesPresenceAndReturnsJsonResponseOnValidPost(): void
+    {
+        $member = new Membre();
+        $member->setNom('Ratsimbazafy');
+        $member->setPrenom('Nirina');
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $repository = $this->createMock(EntityRepository::class);
+
+        $repository->method('findOneBy')
+            ->with(['qrCodeToken' => 'valid_token'])
+            ->willReturn($member);
+
+        $entityManager->method('getRepository')
+            ->with(Membre::class)
+            ->willReturn($repository);
+
+        $entityManager->expects($this->once())
+            ->method('persist')
+            ->with($this->isInstanceOf(Presence::class));
+        $entityManager->expects($this->once())
+            ->method('flush');
+
+        $twig = $this->createMock(Environment::class);
+        $request = Request::create('/membres/scan/valid_token?format=json', 'POST', ['activityName' => 'Formation Jeunes']);
+
+        $controller = new PresenceScanController($twig);
+        $response = $controller->__invoke('valid_token', $request, $entityManager);
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $data = json_decode($response->getContent(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals('Formation Jeunes', $data['presence']['activityName']);
+        $this->assertEquals('Ratsimbazafy', $data['membre']['nom']);
     }
 }

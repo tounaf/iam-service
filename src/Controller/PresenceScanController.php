@@ -6,6 +6,7 @@ use App\Entity\Membre;
 use App\Entity\Presence;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -27,7 +28,22 @@ class PresenceScanController extends AbstractController
     ): Response {
         $membre = $entityManager->getRepository(Membre::class)->findOneBy(['qrCodeToken' => $token]);
 
+        $format = $request->query->get('format');
+        $acceptHeader = $request->headers->get('Accept', '');
+        $contentTypeHeader = $request->headers->get('Content-Type', '');
+
+        $isJsonRequest = $format === 'json'
+            || str_contains($acceptHeader, 'application/json')
+            || str_contains($contentTypeHeader, 'application/json');
+
         if (!$membre) {
+            if ($isJsonRequest) {
+                return new JsonResponse([
+                    'error' => 'Code QR non reconnu',
+                    'message' => 'Le code QR scanné ne correspond à aucun membre enregistré.'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
             return new Response($this->renderErrorHtml(
                 'Code QR non reconnu',
                 'Le code QR scanné ne correspond à aucun membre enregistré.'
@@ -37,8 +53,21 @@ class PresenceScanController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $activityName = trim($request->request->get('activityName', ''));
+            $activityName = trim((string) $request->request->get('activityName', ''));
+            if ($activityName === '' && str_contains($contentTypeHeader, 'application/json')) {
+                $payload = json_decode($request->getContent(), true);
+                if (is_array($payload) && isset($payload['activityName'])) {
+                    $activityName = trim((string) $payload['activityName']);
+                }
+            }
+
             if ($activityName === '') {
+                if ($isJsonRequest) {
+                    return new JsonResponse([
+                        'error' => 'Veuillez saisir ou choisir le nom de l\'activité.'
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+
                 return new Response($this->renderFormHtml(
                     $membre,
                     'Veuillez saisir ou choisir le nom de l\'activité.'
@@ -51,7 +80,8 @@ class PresenceScanController extends AbstractController
             $presence = new Presence();
             $presence->setMembre($membre);
             $presence->setActivityName($activityName);
-            $presence->setScannedAt(new \DateTimeImmutable());
+            $scannedAt = new \DateTimeImmutable();
+            $presence->setScannedAt($scannedAt);
 
             // If a coordinator is logged in, register scannedBy
             if ($tokenStorage !== null) {
@@ -65,12 +95,40 @@ class PresenceScanController extends AbstractController
             $entityManager->persist($presence);
             $entityManager->flush();
 
+            if ($isJsonRequest) {
+                return new JsonResponse([
+                    'success' => true,
+                    'message' => 'Présence enregistrée avec succès.',
+                    'presence' => [
+                        'id' => $presence->getId(),
+                        'activityName' => $activityName,
+                        'scannedAt' => $scannedAt->format(\DateTimeInterface::ATOM),
+                    ],
+                    'membre' => [
+                        'id' => $membre->getId(),
+                        'nom' => $membre->getNom(),
+                        'prenom' => $membre->getPrenom(),
+                    ]
+                ], Response::HTTP_OK);
+            }
+
             return new Response($this->renderSuccessHtml(
                 $membre,
                 $activityName
             ), Response::HTTP_OK, [
                 'Content-Type' => 'text/html; charset=utf-8'
             ]);
+        }
+
+        if ($isJsonRequest) {
+            return new JsonResponse([
+                'membre' => [
+                    'id' => $membre->getId(),
+                    'nom' => $membre->getNom(),
+                    'prenom' => $membre->getPrenom(),
+                    'fiangonana' => $membre->getFiangonana()?->getNom() ?? 'Paroisse',
+                ]
+            ], Response::HTTP_OK);
         }
 
         return new Response($this->renderFormHtml($membre), Response::HTTP_OK, [
