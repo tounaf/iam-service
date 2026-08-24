@@ -6,6 +6,8 @@ use App\Entity\Membre;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
@@ -21,17 +23,26 @@ class MembreCarteController extends AbstractController
     }
 
     #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
-    public function __invoke(?Membre $membre): Response
+    public function __invoke(?Membre $membre, ?Request $request = null): Response
     {
         if (!$membre) {
             throw new NotFoundHttpException('Membre non trouvé.');
         }
 
+        if ($request === null) {
+            $request = Request::createFromGlobals();
+        }
+
         $token = $membre->getQrCodeToken() ?: 'N/A';
+        $host = $request->getSchemeAndHttpHost() ?: 'http://localhost';
+        $scanUrl = $token !== 'N/A' ? sprintf('%s/membres/scan/%s', $host, $token) : 'N/A';
+
+        $raw = $request->query->get('raw');
+        $qrData = ($raw === '1' || $raw === 'true') ? $token : $scanUrl;
 
         // Generate QR code inline as base64
         $qrCode = new QrCode(
-            data: $token,
+            data: $qrData,
             size: 150,
             margin: 5
         );
@@ -47,7 +58,10 @@ class MembreCarteController extends AbstractController
 
         $associationsList = [];
         foreach ($membre->getAssociations() as $assoc) {
-            $associationsList[] = $assoc->getNom() ?? '';
+            $assocName = $assoc->getNom();
+            if ($assocName !== null && $assocName !== '') {
+                $associationsList[] = $assocName;
+            }
         }
         $associationsStr = !empty($associationsList) ? implode(', ', $associationsList) : 'Aucune';
 
@@ -55,6 +69,34 @@ class MembreCarteController extends AbstractController
         $prenom = $membre->getPrenom() ?? '';
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
+
+        // Check if JSON format is requested via query param or Accept header
+        $formatParam = strtolower((string)$request->query->get('format'));
+        $acceptHeader = (string)$request->headers->get('Accept');
+
+        if ($formatParam === 'json' || str_contains($acceptHeader, 'application/json')) {
+            return new JsonResponse([
+                'membre' => [
+                    'id' => $membre->getId(),
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'email' => $email,
+                    'telephone' => $telephone,
+                    'fiangonana' => $fiangonanaNom,
+                    'zoneGeographique' => $groupeNom,
+                    'associations' => $associationsList,
+                ],
+                'card' => [
+                    'qrCodeToken' => $token,
+                    'scanUrl' => $scanUrl,
+                    'qrCodeImageBase64' => $qrCodeBase64,
+                    'qrCodeImageUrl' => sprintf('/api/membres/%d/qr-code', $membre->getId()),
+                ],
+                'participationStatsUrl' => sprintf('/api/membres/%d/participation-stats', $membre->getId()),
+            ], Response::HTTP_OK, [
+                'Cache-Control' => 'public, max-age=3600'
+            ]);
+        }
 
         $html = $this->twig->render('membre/carte.html.twig', [
             'nom' => $nom,
@@ -66,6 +108,8 @@ class MembreCarteController extends AbstractController
             'associationsStr' => $associationsStr,
             'qrCodeBase64' => $qrCodeBase64,
             'memberId' => $membre->getId(),
+            'token' => $token,
+            'scanUrl' => $scanUrl,
         ]);
 
         return new Response(

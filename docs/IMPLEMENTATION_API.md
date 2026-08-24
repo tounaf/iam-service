@@ -118,18 +118,23 @@ Toutes les APIs sont préfixées par `/api` et supportent les formats `json`, `j
 *   `PATCH /api/role_assignments/{id}` : Archivage ou désactivation d'un mandat en cours (par exemple lors d'une passation).
     *   *Payload* : `{"isActive": false, "endDate": "2024-12-31T23:59:59Z"}`
 
-### H. Code QR unique (QR Code) et Présences/Scans (Presence)
+### H. Carte de Membre, QR Code, Présences/Scans & Statistiques
 
 Chaque membre possède un identifiant de QR code unique (`qrCodeToken`) généré automatiquement sous forme de jeton sécurisé lors de son inscription.
 
-#### 1. Génération de l'image du QR Code
-*   `GET /api/membres/{id}/qr-code` : Génère et retourne l'image PNG binaire haute définition (300x300 px) du QR Code unique du membre.
-    *   *Format* : Retourne directement un flux d'image binaire avec le header HTTP `Content-Type: image/png`.
-    *   *Exemple d'intégration html* : `<img src="http://localhost/api/membres/12/qr-code" />`
+#### 1. Carte de Membre Officielle
+*   `GET /api/membres/{id}/carte` : Génère la fiche/carte de membre officielle.
+    *   *Rendu HTML par défaut* : Rendu Twig/Tailwind CSS responsive prêt pour impression avec image QR Code base64 encodée.
+    *   *Format JSON* : Accessible via `?format=json` ou header `Accept: application/json`. Retourne les informations du membre, les affiliations, l'URL de scan (`/membres/scan/{token}`) et le lien vers les statistiques de participation.
 
-#### 2. Enregistrement d'une présence ou participation (scan)
-Lorsqu'un membre présente son QR code à une activité ou formation (ex: "Formation des Jeunes 2026"), le responsable scanne le code et enregistre sa présence :
-*   `POST /api/presences` : Enregistre une présence scannée.
+#### 2. Génération de l'image du QR Code
+*   `GET /api/membres/{id}/qr-code` : Génère et retourne l'image PNG binaire haute définition (300x300 px) du QR Code unique du membre. Le QR Code encode par défaut l'URL du service de pointage de présence (`/membres/scan/{token}`).
+    *   *Format* : Retourne directement un flux d'image binaire avec le header HTTP `Content-Type: image/png`.
+
+#### 3. Enregistrement d'une présence ou participation (scan)
+Lorsqu'un membre présente sa carte lors d'un événement, d'une activité de groupe/association ou d'une formation des jeunes, le responsable scanne le QR code (le QR code pointe directement vers `/membres/scan/{token}`) :
+*   `GET|POST /membres/scan/{token}` : Portal web interactif de prise de présence par scan.
+*   `POST /api/presences` : Endpoint REST pour enregistrer une présence.
     *   *Payload* :
         ```json
         {
@@ -138,7 +143,10 @@ Lorsqu'un membre présente son QR code à une activité ou formation (ex: "Forma
           "scannedBy": "/api/membres/1"
         }
         ```
-*   `GET /api/presences` : Liste de toutes les présences, filtrable par activité ou par membre.
+*   `GET /api/presences` : Liste de toutes les présences.
+
+#### 4. Suivi et Taux de Participation Annuel
+*   `GET /api/membres/{id}/participation-stats` : Calcule le taux de participation annuel d'un membre (`?year=2026`), fournissant le nombre total d'activités, le nombre d'activités assistées, le pourcentage de participation et les journaux de présence.
 
 ---
 

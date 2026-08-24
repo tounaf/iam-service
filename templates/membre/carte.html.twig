@@ -85,7 +85,7 @@
 
         <!-- Card Footer -->
         <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500">
-            <span>ID Membre: #{{ memberId }}</span>
+            <span>ID Membre: #{{ memberId }} {% if token is defined and token != 'N/A' %}(Token: {{ token }}){% endif %}</span>
             <span class="font-medium">Validité Permanente</span>
         </div>
     </div>
