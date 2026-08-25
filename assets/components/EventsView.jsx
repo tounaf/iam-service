@@ -32,6 +32,14 @@ export function EventsView({ memberId, member }) {
   const [attendees, setAttendees] = useState([]);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
 
+  // Evaluation & Detail Modal State
+  const [detailModalEvent, setDetailModalEvent] = useState(null);
+  const [noteInput, setNoteInput] = useState('');
+  const [compteRenduInput, setCompteRenduInput] = useState('');
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaUrlInput, setMediaUrlInput] = useState('');
+  const [updatingDetail, setUpdatingDetail] = useState(false);
+
   const fetchEventsData = () => {
     if (!memberId) return;
 
@@ -136,6 +144,82 @@ export function EventsView({ memberId, member }) {
       })
       .catch((err) => console.error('Error fetching attendees:', err))
       .finally(() => setLoadingAttendees(false));
+  };
+
+  const handleOpenDetailModal = (event) => {
+    setDetailModalEvent(event);
+    setCompteRenduInput(event.compteRendu || '');
+    setNoteInput('');
+    setMediaFile(null);
+    setMediaUrlInput('');
+  };
+
+  const handleAddNote = (text) => {
+    const val = text || noteInput;
+    if (!val.trim() || !detailModalEvent) return;
+
+    setUpdatingDetail(true);
+    fetch(`/api/member-events/${detailModalEvent.id}/add-note`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: val.trim() }),
+    })
+      .then((r) => r.json())
+      .then(() => {
+        setNoteInput('');
+        fetchEventsData();
+        // refresh local detailModalEvent notes
+        setDetailModalEvent((prev) => ({
+          ...prev,
+          notes: prev.notes ? [...prev.notes, { contenu: val.trim() }] : [{ contenu: val.trim() }],
+        }));
+      })
+      .finally(() => setUpdatingDetail(false));
+  };
+
+  const handleSaveCompteRendu = (e) => {
+    e.preventDefault();
+    if (!detailModalEvent) return;
+
+    setUpdatingDetail(true);
+    fetch(`/api/member-events/${detailModalEvent.id}/compte-rendu`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ compteRendu: compteRenduInput }),
+    })
+      .then((r) => r.json())
+      .then(() => {
+        fetchEventsData();
+      })
+      .finally(() => setUpdatingDetail(false));
+  };
+
+  const handleUploadMedia = (e) => {
+    e.preventDefault();
+    if (!detailModalEvent) return;
+
+    const data = new FormData();
+    if (mediaFile) data.append('mediaFile', mediaFile);
+    if (mediaUrlInput) data.append('mediaUrl', mediaUrlInput);
+
+    setUpdatingDetail(true);
+    fetch(`/api/member-events/${detailModalEvent.id}/upload-media`, {
+      method: 'POST',
+      body: data,
+    })
+      .then((r) => r.json())
+      .then((resData) => {
+        setMediaFile(null);
+        setMediaUrlInput('');
+        fetchEventsData();
+        if (resData.mediaUrls) {
+          setDetailModalEvent((prev) => ({
+            ...prev,
+            medias: resData.mediaUrls.map((u) => ({ url: u })),
+          }));
+        }
+      })
+      .finally(() => setUpdatingDetail(false));
   };
 
   if (loading) {
@@ -250,7 +334,12 @@ export function EventsView({ memberId, member }) {
                       </span>
                     )}
                   </div>
-                  <h4 className="text-base font-extrabold text-slate-800 mt-2">{event.nom}</h4>
+                  <h4
+                    onClick={() => handleOpenDetailModal(event)}
+                    className="text-base font-extrabold text-slate-800 mt-2 hover:text-indigo-600 cursor-pointer"
+                  >
+                    {event.nom}
+                  </h4>
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2">{event.description || 'Aucune description'}</p>
                 </div>
 
@@ -270,6 +359,14 @@ export function EventsView({ memberId, member }) {
                 </div>
 
                 <div className="flex items-center space-x-2 shrink-0">
+                  {/* View Details / Report / Evaluation Button */}
+                  <button
+                    onClick={() => handleOpenDetailModal(event)}
+                    className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 transition flex items-center"
+                  >
+                    <i className="fa-solid fa-[#fa-file-lines] mr-1.5 fa-file-pen"></i> Rapport & Médias
+                  </button>
+
                   {/* View Attendees List Button */}
                   <button
                     onClick={() => handleViewAttendees(event)}
@@ -301,6 +398,162 @@ export function EventsView({ memberId, member }) {
           </div>
         )}
       </div>
+
+      {/* Modal: Event Detail, Report, Evaluation, & Media Upload */}
+      {detailModalEvent && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <button
+              onClick={() => setDetailModalEvent(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2 rounded-full"
+            >
+              <i className="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+                Fiche & Rapport d'Événement
+              </span>
+              <h3 className="text-xl font-extrabold text-slate-800 mt-1">
+                {detailModalEvent.nom}
+              </h3>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-5">
+              {/* Section 1: Notes & Evaluation */}
+              <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-3">
+                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
+                  <i className="fa-solid fa-star text-amber-500 mr-2"></i> Évaluations & Notes
+                </h4>
+
+                <div className="flex flex-wrap gap-2">
+                  {detailModalEvent.notes && detailModalEvent.notes.length > 0 ? (
+                    detailModalEvent.notes.map((n, i) => (
+                      <span key={i} className="px-3 py-1 bg-white rounded-xl text-xs font-bold text-amber-900 border border-amber-200 shadow-sm">
+                        • {typeof n === 'string' ? n : n.contenu}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">Aucune note attribuée.</span>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-2 pt-1">
+                  <input
+                    type="text"
+                    placeholder="Ajouter une appréciation (ex: Très bien, Succès...)"
+                    value={noteInput}
+                    onChange={(e) => setNoteInput(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-amber-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddNote('Très bien')}
+                    className="px-2.5 py-2 bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-xl hover:bg-emerald-200"
+                  >
+                    + Très bien
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddNote()}
+                    disabled={updatingDetail}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              </div>
+
+              {/* Section 2: Compte-Rendu */}
+              <form onSubmit={handleSaveCompteRendu} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
+                  <i className="fa-solid fa-file-pen text-indigo-500 mr-2"></i> Compte-Rendu & Résumé
+                </h4>
+
+                <textarea
+                  rows="3"
+                  placeholder="Saisissez les faits marquants ou le résumé..."
+                  value={compteRenduInput}
+                  onChange={(e) => setCompteRenduInput(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 bg-white focus:outline-none focus:border-indigo-500"
+                ></textarea>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={updatingDetail}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
+                  >
+                    Enregistrer le Compte-Rendu
+                  </button>
+                </div>
+              </form>
+
+              {/* Section 3: Media Upload & Gallery */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
+                  <i className="fa-solid fa-photo-film text-purple-500 mr-2"></i> Photos & Vidéos Souvenirs
+                </h4>
+
+                <form onSubmit={handleUploadMedia} className="flex flex-col sm:flex-row items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={(e) => setMediaFile(e.target.files[0] || null)}
+                    className="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Ou URL externe..."
+                    value={mediaUrlInput}
+                    onChange={(e) => setMediaUrlInput(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-purple-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={updatingDetail}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm transition whitespace-nowrap"
+                  >
+                    Téléverser
+                  </button>
+                </form>
+
+                {/* Media Gallery */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
+                  {detailModalEvent.medias && detailModalEvent.medias.length > 0 ? (
+                    detailModalEvent.medias.map((m, i) => {
+                      const url = typeof m === 'string' ? m : m.url;
+                      const isVideo = url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg');
+                      return (
+                        <div key={i} className="aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-900">
+                          {isVideo ? (
+                            <video src={url} controls className="w-full h-full object-cover"></video>
+                          ) : (
+                            <img src={url} className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="col-span-full text-center text-slate-400 text-xs py-2">
+                      Aucun média joint pour cet événement.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setDetailModalEvent(null)}
+                className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Create Event */}
       {showCreateModal && (

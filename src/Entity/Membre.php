@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
@@ -46,6 +48,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
     normalizationContext: ['groups' => ['membre:read']],
     denormalizationContext: ['groups' => ['membre:write']]
 )]
+#[ApiFilter(SearchFilter::class, properties: ['associations' => 'exact', 'fiangonana' => 'exact', 'zoneGeographique' => 'exact'])]
 class Membre implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]

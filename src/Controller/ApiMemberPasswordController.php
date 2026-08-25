@@ -38,9 +38,9 @@ class ApiMemberPasswordController extends AbstractController
             return $this->json(['message' => 'Le nouveau mot de passe doit contenir au moins 6 caractères.'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Verify current password if user already has a password set
-        if ($user->getPassword() !== null && $currentPassword !== '') {
-            if (!$passwordHasher->isPasswordValid($user, $currentPassword)) {
+        // Always require and verify current password if user already has a password set
+        if ($user->getPassword() !== null) {
+            if ($currentPassword === '' || !$passwordHasher->isPasswordValid($user, $currentPassword)) {
                 return $this->json(['message' => 'Le mot de passe actuel est incorrect.'], Response::HTTP_BAD_REQUEST);
             }
         }

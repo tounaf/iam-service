@@ -42,10 +42,19 @@ class ApiMemberAssociationManageController extends AbstractController
             return $this->json(['message' => 'Le nom, le prénom et l\'email sont obligatoires.'], Response::HTTP_BAD_REQUEST);
         }
 
+        // Authorization check: User can edit their own profile, or be an admin, or belong to the association/group being managed
         if ($memberId) {
             $membre = $em->getRepository(Membre::class)->find($memberId);
             if (!$membre) {
                 return $this->json(['message' => 'Membre introuvable.'], Response::HTTP_NOT_FOUND);
+            }
+
+            $isSelf = $currentUser->getId() === $membre->getId();
+            $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles(), true);
+            $hasAssociationRight = $associationId && $currentUser->getAssociations()->exists(fn($i, $a) => $a->getId() === $associationId);
+
+            if (!$isSelf && !$isAdmin && !$hasAssociationRight) {
+                return $this->json(['message' => 'Accès refusé.'], Response::HTTP_FORBIDDEN);
             }
         } else {
             // Check if email already exists
