@@ -12,6 +12,7 @@ export function ProfileView({ member, onRefresh }) {
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -37,11 +38,33 @@ export function ProfileView({ member, onRefresh }) {
     );
   }
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+  const handleFileSelect = (file) => {
+    if (file && file.type.startsWith('image/')) {
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    handleFileSelect(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelect(e.dataTransfer.files[0]);
     }
   };
 
@@ -119,7 +142,7 @@ export function ProfileView({ member, onRefresh }) {
                 {member.prenom} {member.nom}
               </h1>
               <p className="text-xs font-semibold text-slate-500">
-                Membre #{member.id} • Registered {member.createdAt ? new Date(member.createdAt).toLocaleDateString('fr-FR') : 'N/A'}
+                Membre #{member.id} • Inscrit {member.createdAt ? new Date(member.createdAt).toLocaleDateString('fr-FR') : 'N/A'}
               </p>
             </div>
           </div>
@@ -150,25 +173,50 @@ export function ProfileView({ member, onRefresh }) {
             <i className="fa-solid fa-user-pen text-indigo-500 mr-2"></i> Modifier mes Informations de Base
           </h3>
 
-          {/* Photo upload input */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
-            <div className="w-16 h-16 rounded-xl border border-slate-300 overflow-hidden shrink-0 bg-white">
+          {/* Photo upload / Drag & Drop Dropzone */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`p-6 rounded-2xl border-2 border-dashed transition-all duration-200 flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 text-center sm:text-left ${
+              isDragging ? 'border-indigo-500 bg-indigo-50/60 scale-[1.01]' : 'border-slate-300 bg-slate-50/80 hover:bg-slate-50'
+            }`}
+          >
+            <div className="w-20 h-28 rounded-2xl border-2 border-slate-200 overflow-hidden shrink-0 bg-white shadow-sm flex items-center justify-center relative">
               {photoPreview ? (
                 <img src={photoPreview} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400">
-                  <i className="fa-solid fa-camera text-xl"></i>
+                <div className="text-slate-300 flex flex-col items-center">
+                  <i className="fa-solid fa-camera text-2xl mb-1"></i>
+                  <span className="text-[10px] font-bold">Photo</span>
                 </div>
               )}
             </div>
-            <div className="flex-1 text-center sm:text-left">
-              <label className="text-xs font-bold text-slate-700 block mb-1">Changer la Photo de Profil</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-              />
+
+            <div className="flex-1 space-y-1">
+              <label className="text-xs font-extrabold text-slate-800 block">
+                Glissez-déposez votre photo de profil ici
+              </label>
+              <p className="text-[11px] text-slate-500">
+                Formats acceptés: PNG, JPG, JPEG, WEBP.
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <label className="cursor-pointer px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition inline-flex items-center">
+                  <i className="fa-solid fa-cloud-arrow-up mr-2"></i> Parcourir un fichier
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+                {photoFile && (
+                  <span className="text-[11px] text-emerald-600 font-bold flex items-center">
+                    <i className="fa-solid fa-check mr-1"></i> {photoFile.name}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
