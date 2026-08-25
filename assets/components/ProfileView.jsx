@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 export function ProfileView({ member, onRefresh }) {
   const [showCardModal, setShowCardModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  // Profile Form State
   const [formData, setFormData] = useState({
     nom: '',
     prenom: '',
@@ -14,6 +17,16 @@ export function ProfileView({ member, onRefresh }) {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Password Change Form State
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState(null);
+
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
@@ -102,6 +115,42 @@ export function ProfileView({ member, onRefresh }) {
       .finally(() => setSaving(false));
   };
 
+  const handleChangePasswordSubmit = (e) => {
+    e.preventDefault();
+    setPasswordMessage(null);
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'Les deux mots de passe ne correspondent pas.' });
+      return;
+    }
+
+    setChangingPassword(true);
+
+    fetch('/api/me/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.message || 'Erreur lors de la modification du mot de passe.');
+        }
+        return data;
+      })
+      .then((data) => {
+        setPasswordMessage({ type: 'success', text: data.message });
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      })
+      .catch((err) => {
+        setPasswordMessage({ type: 'error', text: err.message });
+      })
+      .finally(() => setChangingPassword(false));
+  };
+
   return (
     <div className="space-y-6">
       {/* Flash Feedback Message */}
@@ -147,13 +196,23 @@ export function ProfileView({ member, onRefresh }) {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 w-full sm:w-auto">
+          <div className="flex items-center space-x-2 w-full sm:w-auto flex-wrap">
             <button
               onClick={() => setIsEditing(!isEditing)}
               className="flex-1 sm:flex-initial px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center"
             >
               <i className={`fa-solid ${isEditing ? 'fa-xmark' : 'fa-pen-to-square'} mr-2`}></i>
               {isEditing ? 'Annuler' : 'Éditer mon profil'}
+            </button>
+            <button
+              onClick={() => {
+                setShowPasswordModal(true);
+                setPasswordMessage(null);
+              }}
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs transition flex items-center justify-center"
+            >
+              <i className="fa-solid fa-key mr-2 text-xs"></i>
+              Mot de passe
             </button>
             <button
               onClick={() => setShowCardModal(true)}
@@ -349,6 +408,91 @@ export function ProfileView({ member, onRefresh }) {
             >
               Ouvrir la carte officielle format impression &rarr;
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Change Password */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <button
+              onClick={() => setShowPasswordModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2 rounded-full"
+            >
+              <i className="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <h3 className="text-lg font-extrabold text-slate-800 flex items-center">
+              <i className="fa-solid fa-key text-amber-500 mr-2"></i> Modifier mon Mot de Passe
+            </h3>
+
+            {passwordMessage && (
+              <div
+                className={`p-3.5 rounded-2xl text-xs font-bold border flex items-center space-x-2 ${
+                  passwordMessage.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border-rose-200'
+                }`}
+              >
+                <i className={`fa-solid ${passwordMessage.type === 'success' ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-rose-600'}`}></i>
+                <span>{passwordMessage.text}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangePasswordSubmit} className="space-y-4 pt-1">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block">Mot de passe actuel</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block">Nouveau mot de passe *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block">Confirmer le nouveau mot de passe *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
+                >
+                  Fermer
+                </button>
+                <button
+                  type="submit"
+                  disabled={changingPassword}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
+                >
+                  {changingPassword ? 'Modification...' : 'Changer le mot de passe'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
