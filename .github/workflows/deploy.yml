@@ -1,0 +1,76 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, hash, json, openssl, pcre, session, tokenizer, zlib
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install NPM dependencies and build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Create .env file
+        run: |
+          echo "APP_NAME=FVA" > .env
+          echo "APP_ENV=production" >> .env
+          echo "APP_SECRET=${{ secrets.APP_SECRET }}" >> .env
+          echo "APP_DEBUG=false" >> .env
+          echo "APP_URL=${{ secrets.APP_URL }}" >> .env
+          echo "DEFAULT_URI=https://identite.fva-vitaonyasany.mg" >> .env
+          echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> .env
+          echo "PORT=${{ secrets.SSH_PORT }}" >> .env
+          echo "" >> .env
+          echo "DATABASE_URL=mysql://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_DATABASE }}" >> .env
+          cat .env
+          
+      - name: Deploy to Server
+        run: |
+          sudo apt-get install -y sshpass
+          set +e
+          tar --exclude='.git' \
+              --exclude='.github' \
+              --exclude='node_modules' \
+              --exclude='var' \
+              --exclude='tests' \
+              --exclude='phpunit.dist.xml' \
+              --warning=no-file-changed \
+              -czf avas.tar.gz .
+          set -e
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -P "${{ secrets.SSH_PORT }}" -o StrictHostKeyChecking=no avas.tar.gz "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/avas.tar.gz"
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -p "${{ secrets.SSH_PORT }}" -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "find '${{ secrets.WORK_DIR }}' -mindepth 1 ! -path '${{ secrets.WORK_DIR }}/var' ! -path '${{ secrets.WORK_DIR }}/var/*' -exec rm -rf {} + 2>/dev/null || true && tar -xzf ~/avas.tar.gz -C '${{ secrets.WORK_DIR }}' && rm -f ~/avas.tar.gz"
+      - name: Run post-deployment commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.WORK_DIR }}
+            php bin/console doctrine:schema:update --dump-sql --force --env=prod
+            php bin/console cache:clear --env=prod
+            php bin/console assets:install public --env=prod
