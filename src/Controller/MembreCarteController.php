@@ -34,10 +34,15 @@ class MembreCarteController extends AbstractController
         }
 
         $token = $membre->getQrCodeToken() ?: 'N/A';
+        $host = $request->getSchemeAndHttpHost() ?: 'http://localhost';
+        $scanUrl = $token !== 'N/A' ? sprintf('%s/membres/scan/%s', $host, $token) : 'N/A';
+
+        $raw = $request->query->get('raw');
+        $qrData = ($raw === '1' || $raw === 'true') ? $token : $scanUrl;
 
         // Generate QR code inline as base64
         $qrCode = new QrCode(
-            data: $token,
+            data: $qrData,
             size: 150,
             margin: 5
         );
@@ -104,6 +109,8 @@ class MembreCarteController extends AbstractController
             'associationsStr' => $associationsStr,
             'qrCodeBase64' => $qrCodeBase64,
             'memberId' => $membre->getId(),
+            'token' => $token,
+            'scanUrl' => $scanUrl,
         ]);
 
         return new Response(

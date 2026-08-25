@@ -34,6 +34,7 @@ class MembreCarteControllerTest extends TestCase
         $member->method('getFiangonana')->willReturn($fiangonana);
         $member->method('getZoneGeographique')->willReturn($groupe);
         $member->method('getAssociations')->willReturn(new ArrayCollection());
+        $member->method('getQrCodeToken')->willReturn('SECRET_TOKEN_123');
 
         $twig = $this->createMock(Environment::class);
         $twig->expects($this->once())
@@ -45,10 +46,12 @@ class MembreCarteControllerTest extends TestCase
                         && $args['prenom'] === 'Nirina'
                         && $args['fiangonanaNom'] === 'Test Church'
                         && $args['groupeNom'] === 'Test Geographic Zone'
-                        && $args['memberId'] === 42;
+                        && $args['memberId'] === 42
+                        && $args['token'] === 'SECRET_TOKEN_123'
+                        && str_contains($args['scanUrl'], '/membres/scan/SECRET_TOKEN_123');
                 })
             )
-            ->willReturn('<html>Nirina Ratsimbazafy - Test Church - Test Geographic Zone - /api/membres/42/qr-code</html>');
+            ->willReturn('<html>Nirina Ratsimbazafy - Test Church - Test Geographic Zone</html>');
 
         $controller = new MembreCarteController($twig);
         $response = $controller->__invoke($member);
