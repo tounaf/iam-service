@@ -52,8 +52,14 @@ class MembreCarteController extends AbstractController
         $groupeNom = $groupeNom ?? 'Non spécifié';
 
         $associationsList = [];
+        $associationsArray = [];
         foreach ($membre->getAssociations() as $assoc) {
-            $associationsList[] = $assoc->getNom() ?? '';
+            $assocNom = $assoc->getNom() ?? '';
+            $associationsList[] = $assocNom;
+            $associationsArray[] = [
+                'id' => $assoc->getId(),
+                'nom' => $assocNom
+            ];
         }
         $associationsStr = !empty($associationsList) ? implode(', ', $associationsList) : 'Aucune';
 
