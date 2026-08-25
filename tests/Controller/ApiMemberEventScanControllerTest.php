@@ -131,4 +131,58 @@ class ApiMemberEventScanControllerTest extends TestCase
         $this->assertStringContainsString('validée avec succès', $data['message']);
         $this->assertEquals('Jean', $data['membre']['prenom']);
     }
+
+    public function testGetEventAttendeesReturnsList(): void
+    {
+        $currentUser = new Membre();
+        $currentUser->setEmail('officer@example.com');
+
+        $token = $this->createMock(UsernamePasswordToken::class);
+        $token->method('getUser')->willReturn($currentUser);
+
+        $tokenStorage = $this->createMock(TokenStorageInterface::class);
+        $tokenStorage->method('getToken')->willReturn($token);
+
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')->willReturnCallback(fn($id) => in_array($id, ['security.token_storage', 'security.authorization_checker'], true));
+        $container->method('get')->willReturnCallback(fn($id) => $id === 'security.token_storage' ? $tokenStorage : null);
+
+        $evenement = new Evenement();
+        $evenement->setNom('Culte Spécial');
+
+        $targetMembre = new Membre();
+        $targetMembre->setNom('Rabe');
+        $targetMembre->setPrenom('Paul');
+
+        $presence = new Presence();
+        $presence->setMembre($targetMembre);
+        $presence->setActivityName('Culte Spécial');
+        $presence->setScannedAt(new \DateTimeImmutable());
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $eventRepo = $this->createMock(EntityRepository::class);
+        $presenceRepo = $this->createMock(EntityRepository::class);
+
+        $eventRepo->method('find')->with(5)->willReturn($evenement);
+        $presenceRepo->method('findBy')->with(['activityName' => 'Culte Spécial'], ['scannedAt' => 'DESC'])->willReturn([$presence]);
+
+        $em->method('getRepository')->willReturnCallback(function ($class) use ($eventRepo, $presenceRepo) {
+            return match ($class) {
+                Evenement::class => $eventRepo,
+                Presence::class => $presenceRepo,
+                default => null,
+            };
+        });
+
+        $controller = new ApiMemberEventScanController();
+        $controller->setContainer($container);
+
+        $response = $controller->getEventAttendees(5, $em);
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertEquals(1, $data['count']);
+        $this->assertEquals('Paul', $data['attendees'][0]['prenom']);
+    }
 }

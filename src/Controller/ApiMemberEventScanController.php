@@ -157,4 +157,47 @@ class ApiMemberEventScanController extends AbstractController
             'scannedAt' => $presence->getScannedAt()->format('Y-m-d H:i:s'),
         ]);
     }
+
+    #[Route('/api/member-events/{id}/attendees', name: 'api_member_events_attendees', methods: ['GET'])]
+    public function getEventAttendees(int $id, EntityManagerInterface $em): JsonResponse
+    {
+        /** @var Membre|null $currentUser */
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
+            return $this->json(['message' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $evenement = $em->getRepository(Evenement::class)->find($id);
+        if (!$evenement) {
+            return $this->json(['message' => 'Événement introuvable'], Response::HTTP_NOT_FOUND);
+        }
+
+        $presences = $em->getRepository(Presence::class)->findBy(
+            ['activityName' => $evenement->getNom()],
+            ['scannedAt' => 'DESC']
+        );
+
+        $attendees = [];
+        foreach ($presences as $p) {
+            $m = $p->getMembre();
+            if ($m) {
+                $attendees[] = [
+                    'id' => $m->getId(),
+                    'nom' => $m->getNom(),
+                    'prenom' => $m->getPrenom(),
+                    'email' => $m->getEmail(),
+                    'telephone' => $m->getTelephone(),
+                    'photoUrl' => $m->getPhotoUrl(),
+                    'scannedAt' => $p->getScannedAt()?->format('d/m/Y H:i:s'),
+                ];
+            }
+        }
+
+        return $this->json([
+            'eventId' => $evenement->getId(),
+            'eventNom' => $evenement->getNom(),
+            'count' => count($attendees),
+            'attendees' => $attendees,
+        ]);
+    }
 }

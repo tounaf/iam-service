@@ -27,6 +27,11 @@ export function EventsView({ memberId, member }) {
   const [scanning, setScanning] = useState(false);
   const [scanFeedback, setScanFeedback] = useState(null);
 
+  // Attendees Modal State
+  const [attendeesModalEvent, setAttendeesModalEvent] = useState(null);
+  const [attendees, setAttendees] = useState([]);
+  const [loadingAttendees, setLoadingAttendees] = useState(false);
+
   const fetchEventsData = () => {
     if (!memberId) return;
 
@@ -118,6 +123,19 @@ export function EventsView({ memberId, member }) {
       })
       .catch((err) => setScanFeedback({ message: 'Erreur réseau lors du scan.' }))
       .finally(() => setScanning(false));
+  };
+
+  const handleViewAttendees = (event) => {
+    setAttendeesModalEvent(event);
+    setLoadingAttendees(true);
+
+    fetch(`/api/member-events/${event.id}/attendees`)
+      .then((res) => res.json())
+      .then((data) => {
+        setAttendees(data.attendees || []);
+      })
+      .catch((err) => console.error('Error fetching attendees:', err))
+      .finally(() => setLoadingAttendees(false));
   };
 
   if (loading) {
@@ -251,17 +269,27 @@ export function EventsView({ memberId, member }) {
                   <span><i className="fa-solid fa-clock mr-1 text-indigo-500"></i> {event.dateDebut ? new Date(event.dateDebut).toLocaleDateString('fr-FR') : 'N/A'}</span>
                 </div>
 
-                {/* Scan Button on Event Card */}
-                <button
-                  onClick={() => {
-                    setScanModalEvent(event);
-                    setScanFeedback(null);
-                    setQrTokenInput('');
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition flex items-center shrink-0"
-                >
-                  <i className="fa-solid fa-qrcode mr-1.5"></i> Scanner Présences
-                </button>
+                <div className="flex items-center space-x-2 shrink-0">
+                  {/* View Attendees List Button */}
+                  <button
+                    onClick={() => handleViewAttendees(event)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center"
+                  >
+                    <i className="fa-solid fa-users mr-1.5"></i> Présents
+                  </button>
+
+                  {/* Scan Button on Event Card */}
+                  <button
+                    onClick={() => {
+                      setScanModalEvent(event);
+                      setScanFeedback(null);
+                      setQrTokenInput('');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition flex items-center"
+                  >
+                    <i className="fa-solid fa-qrcode mr-1.5"></i> Scanner
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -471,6 +499,73 @@ export function EventsView({ memberId, member }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: View Event Attendees */}
+      {attendeesModalEvent && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <button
+              onClick={() => setAttendeesModalEvent(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2 rounded-full"
+            >
+              <i className="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
+                Membres Présents
+              </span>
+              <h3 className="text-lg font-extrabold text-slate-800 mt-1">
+                {attendeesModalEvent.nom} ({attendees.length})
+              </h3>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pt-2 pr-1 space-y-2">
+              {loadingAttendees ? (
+                <div className="p-8 text-center text-slate-400">
+                  <i className="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                  <p className="text-xs">Chargement des membres présents...</p>
+                </div>
+              ) : attendees.length > 0 ? (
+                attendees.map((attendee, idx) => (
+                  <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between space-x-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs overflow-hidden shrink-0">
+                        {attendee.photoUrl ? (
+                          <img src={attendee.photoUrl} className="w-full h-full object-cover" />
+                        ) : (
+                          attendee.prenom?.charAt(0)
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800 text-xs">{attendee.prenom} {attendee.nom}</p>
+                        <p className="text-[10px] text-slate-400">{attendee.email || 'Pas d\'email'}</p>
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-mono text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200 shrink-0">
+                      {attendee.scannedAt}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  Aucun membre marqué présent pour cet événement pour l'instant.
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setAttendeesModalEvent(null)}
+                className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}
