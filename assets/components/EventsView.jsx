@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 export function EventsView({ memberId, member }) {
   const [events, setEvents] = useState([]);
@@ -26,6 +27,9 @@ export function EventsView({ memberId, member }) {
   const [qrTokenInput, setQrTokenInput] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scanFeedback, setScanFeedback] = useState(null);
+
+  // Camera Scanner active tab: 'camera' or 'manual'
+  const [scanMode, setScanMode] = useState('camera');
 
   // Attendees Modal State
   const [attendeesModalEvent, setAttendeesModalEvent] = useState(null);
@@ -89,6 +93,69 @@ export function EventsView({ memberId, member }) {
     fetchEventsData();
   }, [memberId]);
 
+  // Camera QR Scanner Initialization
+  useEffect(() => {
+    let html5QrcodeScanner = null;
+
+    if (scanModalEvent && scanMode === 'camera') {
+      // Delay mounting scanner slightly to ensure DOM element exists
+      const timer = setTimeout(() => {
+        const readerElem = document.getElementById('qr-camera-reader');
+        if (readerElem) {
+          html5QrcodeScanner = new Html5QrcodeScanner(
+            'qr-camera-reader',
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            /* verbose= */ false
+          );
+
+          html5QrcodeScanner.render(
+            (scannedText) => {
+              // Extract token if text is a URL like /membres/scan/{token}
+              let token = scannedText.trim();
+              if (token.includes('/membres/scan/')) {
+                const parts = token.split('/membres/scan/');
+                token = parts[parts.length - 1];
+              }
+
+              processScanToken(token);
+            },
+            (errorMessage) => {
+              // Ignore frame read errors
+            }
+          );
+        }
+      }, 300);
+
+      return () => {
+        clearTimeout(timer);
+        if (html5QrcodeScanner) {
+          html5QrcodeScanner.clear().catch((e) => console.error('Error clearing scanner', e));
+        }
+      };
+    }
+  }, [scanModalEvent, scanMode]);
+
+  const processScanToken = (token) => {
+    if (!token || !scanModalEvent || scanning) return;
+
+    setScanning(true);
+    setScanFeedback(null);
+
+    fetch(`/api/member-events/${scanModalEvent.id}/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ qrCodeToken: token }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setScanFeedback(data);
+        setQrTokenInput('');
+        fetchEventsData();
+      })
+      .catch((err) => setScanFeedback({ message: 'Erreur réseau lors du scan.' }))
+      .finally(() => setScanning(false));
+  };
+
   const handleCreateEvent = (e) => {
     e.preventDefault();
     setSaving(true);
@@ -111,26 +178,9 @@ export function EventsView({ memberId, member }) {
       .finally(() => setSaving(false));
   };
 
-  const handleScanQr = (e) => {
+  const handleManualScanQr = (e) => {
     e.preventDefault();
-    if (!qrTokenInput.trim() || !scanModalEvent) return;
-
-    setScanning(true);
-    setScanFeedback(null);
-
-    fetch(`/api/member-events/${scanModalEvent.id}/scan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qrCodeToken: qrTokenInput.trim() }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setScanFeedback(data);
-        setQrTokenInput('');
-        fetchEventsData();
-      })
-      .catch((err) => setScanFeedback({ message: 'Erreur réseau lors du scan.' }))
-      .finally(() => setScanning(false));
+    processScanToken(qrTokenInput.trim());
   };
 
   const handleViewAttendees = (event) => {
@@ -168,7 +218,6 @@ export function EventsView({ memberId, member }) {
       .then(() => {
         setNoteInput('');
         fetchEventsData();
-        // refresh local detailModalEvent notes
         setDetailModalEvent((prev) => ({
           ...prev,
           notes: prev.notes ? [...prev.notes, { contenu: val.trim() }] : [{ contenu: val.trim() }],
@@ -364,7 +413,7 @@ export function EventsView({ memberId, member }) {
                     onClick={() => handleOpenDetailModal(event)}
                     className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 transition flex items-center"
                   >
-                    <i className="fa-solid fa-[#fa-file-lines] mr-1.5 fa-file-pen"></i> Rapport & Médias
+                    <i className="fa-solid fa-file-pen mr-1.5"></i> Rapport & Médias
                   </button>
 
                   {/* View Attendees List Button */}
@@ -381,10 +430,11 @@ export function EventsView({ memberId, member }) {
                       setScanModalEvent(event);
                       setScanFeedback(null);
                       setQrTokenInput('');
+                      setScanMode('camera');
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition flex items-center"
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-100 transition flex items-center"
                   >
-                    <i className="fa-solid fa-qrcode mr-1.5"></i> Scanner
+                    <i className="fa-solid fa-camera mr-1.5"></i> Scanner QR
                   </button>
                 </div>
               </div>
@@ -668,7 +718,7 @@ export function EventsView({ memberId, member }) {
         </div>
       )}
 
-      {/* Modal: QR Code Scanner for Event */}
+      {/* Modal: Live Camera QR Code Scanner for Event */}
       {scanModalEvent && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
@@ -681,13 +731,49 @@ export function EventsView({ memberId, member }) {
 
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
-                Pointage de Présence
+                Pointage de Présence par Scan
               </span>
               <h3 className="text-lg font-extrabold text-slate-800 mt-1">
-                Scan QR Code : {scanModalEvent.nom}
+                Pointage : {scanModalEvent.nom}
               </h3>
             </div>
 
+            {/* Scan Mode Toggle: Camera vs Manual Input */}
+            <div className="flex bg-slate-100 p-1 rounded-2xl text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setScanMode('camera')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-2 ${
+                  scanMode === 'camera' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <i className="fa-solid fa-camera"></i>
+                <span>Scanner Caméra Direct</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setScanMode('manual')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-2 ${
+                  scanMode === 'manual' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <i className="fa-solid fa-keyboard"></i>
+                <span>Saisie Manuelle</span>
+              </button>
+            </div>
+
+            {/* Live Camera Scanner Box */}
+            {scanMode === 'camera' && (
+              <div className="space-y-3">
+                <div id="qr-camera-reader" className="w-full rounded-2xl overflow-hidden border border-slate-200 bg-slate-900"></div>
+                <p className="text-[11px] text-slate-400 text-center">
+                  Orientez la caméra vers le QR code figurant sur la carte membre.
+                </p>
+              </div>
+            )}
+
+            {/* Feedback Alert */}
             {scanFeedback && (
               <div
                 className={`p-4 rounded-2xl text-xs font-bold border flex items-center space-x-3 ${
@@ -713,45 +799,60 @@ export function EventsView({ memberId, member }) {
               </div>
             )}
 
-            <form onSubmit={handleScanQr} className="space-y-4 pt-1">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 block">
-                  Scannez ou Saisissez le Token QR Code du Membre
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                    <i className="fa-solid fa-qrcode text-sm"></i>
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    placeholder="Coller le token QR code (ex: 1893281a...)"
-                    value={qrTokenInput}
-                    onChange={(e) => setQrTokenInput(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 text-xs font-mono focus:outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"
-                  />
+            {/* Manual Form */}
+            {scanMode === 'manual' && (
+              <form onSubmit={handleManualScanQr} className="space-y-4 pt-1">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Coller ou Saisir le Token QR Code du Membre
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <i className="fa-solid fa-qrcode text-sm"></i>
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      placeholder="Token QR Code (ex: 1893281a...)"
+                      value={qrTokenInput}
+                      onChange={(e) => setQrTokenInput(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 text-xs font-mono focus:outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex justify-end space-x-3">
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setScanModalEvent(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
+                  >
+                    Fermer
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={scanning}
+                    className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-100 transition disabled:opacity-50 flex items-center"
+                  >
+                    <i className="fa-solid fa-barcode mr-2"></i>
+                    {scanning ? 'Validation...' : 'Valider la Présence'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {scanMode === 'camera' && (
+              <div className="flex justify-end pt-2">
                 <button
                   type="button"
                   onClick={() => setScanModalEvent(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
+                  className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
                 >
-                  Fermer
-                </button>
-                <button
-                  type="submit"
-                  disabled={scanning}
-                  className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-100 transition disabled:opacity-50 flex items-center"
-                >
-                  <i className="fa-solid fa-barcode mr-2"></i>
-                  {scanning ? 'Validation...' : 'Valider la Présence'}
+                  Fermer Scanner
                 </button>
               </div>
-            </form>
+            )}
           </div>
         </div>
       )}
