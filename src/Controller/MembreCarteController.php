@@ -29,6 +29,10 @@ class MembreCarteController extends AbstractController
             throw new NotFoundHttpException('Membre non trouvé.');
         }
 
+        if ($request === null) {
+            $request = Request::createFromGlobals();
+        }
+
         $token = $membre->getQrCodeToken() ?: 'N/A';
 
         // Generate QR code inline as base64
@@ -79,8 +83,6 @@ class MembreCarteController extends AbstractController
                 'associationsStr' => $associationsStr,
                 'qrCodeToken' => $token,
                 'qrCodeBase64' => $qrCodeBase64,
-                'qrCodeUrl' => sprintf('/api/membres/%d/qr-code', $membre->getId()),
-                'scanUrl' => $token !== 'N/A' ? sprintf('%s/membres/scan/%s', $host, $token) : null,
             ], Response::HTTP_OK, [
                 'Cache-Control' => 'public, max-age=3600'
             ]);
