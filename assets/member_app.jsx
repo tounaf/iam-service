@@ -11,17 +11,23 @@ function App() {
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if session is already authenticated on mount
-  useEffect(() => {
+  const fetchAuthenticatedMember = () => {
     fetch('/api/me')
       .then((r) => (r.ok ? r.json() : null))
       .then((userData) => {
         if (userData && userData.id) {
           setCurrentUser(userData);
+        } else {
+          setCurrentUser(null);
         }
       })
       .catch((err) => console.error('Error checking authentication state:', err))
       .finally(() => setLoading(false));
+  };
+
+  // Check if session is already authenticated on mount
+  useEffect(() => {
+    fetchAuthenticatedMember();
   }, []);
 
   // Fetch full details of authenticated member
@@ -67,7 +73,7 @@ function App() {
             </div>
             <span className="font-extrabold text-slate-800 text-base">Portail Membres Paroisse</span>
           </div>
-          <a href="/login" class="text-xs font-bold text-indigo-600 hover:underline">Accès Backoffice Admin &rarr;</a>
+          <a href="/login" className="text-xs font-bold text-indigo-600 hover:underline">Accès Backoffice Admin &rarr;</a>
         </header>
 
         <LoginView onLoginSuccess={(userData) => setCurrentUser(userData)} />
@@ -154,9 +160,9 @@ function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        {activeTab === 'profile' && <ProfileView member={member} />}
+        {activeTab === 'profile' && <ProfileView member={member} onRefresh={fetchAuthenticatedMember} />}
         {activeTab === 'affiliations' && <AffiliationsView member={member} />}
-        {activeTab === 'events' && <EventsView memberId={currentUser.id} />}
+        {activeTab === 'events' && <EventsView memberId={currentUser.id} member={member} />}
       </main>
 
       {/* Footer */}
