@@ -2,15 +2,22 @@
 
 namespace App\Controller;
 
+use App\Entity\Membre;
+use App\Service\PermissionResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
-use App\Entity\Membre;
 
 class ApiSecurityController extends AbstractController
 {
+    private PermissionResolver $permissionResolver;
+
+    public function __construct(PermissionResolver $permissionResolver)
+    {
+        $this->permissionResolver = $permissionResolver;
+    }
+
     #[Route('/api/login_check', name: 'api_login_check', methods: ['POST'])]
     public function login(): JsonResponse
     {
@@ -23,6 +30,8 @@ class ApiSecurityController extends AbstractController
             ], Response::HTTP_UNAUTHORIZED);
         }
 
+        $grantedFeatures = $this->permissionResolver->getGrantedFeatures($user);
+
         return $this->json([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
@@ -30,6 +39,7 @@ class ApiSecurityController extends AbstractController
             'prenom' => $user->getPrenom(),
             'roles' => $user->getRoles(),
             'qrCodeToken' => $user->getQrCodeToken(),
+            'features' => $grantedFeatures,
         ]);
     }
 
@@ -43,6 +53,8 @@ class ApiSecurityController extends AbstractController
             return $this->json(null, Response::HTTP_UNAUTHORIZED);
         }
 
+        $grantedFeatures = $this->permissionResolver->getGrantedFeatures($user);
+
         return $this->json([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
@@ -50,6 +62,7 @@ class ApiSecurityController extends AbstractController
             'prenom' => $user->getPrenom(),
             'roles' => $user->getRoles(),
             'qrCodeToken' => $user->getQrCodeToken(),
+            'features' => $grantedFeatures,
         ]);
     }
 }

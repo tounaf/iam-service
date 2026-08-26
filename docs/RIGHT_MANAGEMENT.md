@@ -15,7 +15,7 @@ Dans notre architecture **Contextual Role-Based Access Control (CRBAC)** :
 Grâce à cette centralisation, nous pouvons :
 1. **Piloter dynamiquement la navigation** : Générer automatiquement les menus de la sidebar d'administration et les onglets / modules de l'Espace Membre selon les habilitations du membre connecté.
 2. **Gérer finement les droits par rôle** : Permettre à un administrateur d'attribuer ou restreindre dynamiquement l'accès à n'importe quel menu ou action sans modifier le code source.
-3. **Harmoniser la sécurité API et UI** : Sécuriser simultanément les contrôleurs (Voter) et les interfaces utilisateur (Twig, React SPA).
+3. **Optimiser les performances grâce à la mise en cache** : Les fonctionnalités calculées lors d'une connexion réussie sont mises en cache. Toute modification de permission ne prend effet qu'après déconnexion puis nouvelle connexion du membre.
 
 ---
 
@@ -78,8 +78,6 @@ erDiagram
 
 ## 3. Cartographie Complète des `Features`
 
-L'ensemble des menus Backoffice Admin et des actions Espace Membre sont répertoriés ci-dessous.
-
 ### 3.1 Menus du Backoffice Administration (`category: ADMIN_MENU`)
 
 | Code Feature | Libellé | Route / URL | Description |
@@ -87,7 +85,7 @@ L'ensemble des menus Backoffice Admin et des actions Espace Membre sont réperto
 | `ADMIN_MENU_DASHBOARD` | Tableau de bord | `app_admin_dashboard` | Vue globale de l'administration et statistiques. |
 | `ADMIN_MENU_FIANGONANA` | Paroisses / Fiangonana | `app_admin_fiangonana_index` | Gestion de l'entité paroissiale racine. |
 | `ADMIN_MENU_GROUPES` | Zones / Groupes | `app_admin_groupe_index` | Gestion des zones géographiques et groupes. |
-| `ADMIN_MENU_ASSOCIATIONS` | Associations | `app_admin_association_index` | Managing church associations (Femmes, Hommes, Jeunesse...). |
+| `ADMIN_MENU_ASSOCIATIONS` | Associations | `app_admin_association_index` | Gestion des associations (Femmes, Hommes, Jeunesse...). |
 | `ADMIN_MENU_MEMBRES` | Membres | `app_admin_membre_index` | Gestion globale de l'annuaire des membres. |
 | `ADMIN_MENU_ROLES` | Rôles & Habilitations | `app_admin_role_index` | Gestion des rôles, attributions et permissions CRBAC. |
 | `ADMIN_MENU_EVENEMENTS` | Événements | `app_admin_evenement_index` | Création et suivi des événements paroissiaux. |
@@ -115,60 +113,41 @@ L'ensemble des menus Backoffice Admin et des actions Espace Membre sont réperto
 
 ---
 
-## 4. Flux Dynamique de Rendu des Menus et Contrôle d'Accès
+## 4. Stratégie de Cache & Cycle de Vie des Habilitations
+
+Pour alléger la charge sur la base de données et accélérer la vérification des droits sur chaque requête, le système s'appuie sur le composant **Symfony Cache** via `App\Service\PermissionResolver` et `App\EventListener\SecurityCacheListener`.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Membre Authentifié
-    participant UI as Interface (Twig Admin / React SPA)
-    participant Sec as Security Voter / Provider
+    actor Membre as Membre Authentifié
+    participant EventListener as SecurityCacheListener
+    participant Resolver as PermissionResolver
+    participant Cache as Symfony Cache
     participant DB as Base de Données
 
-    User->>UI: Accède à l'application
-    UI->>Sec: Récupérer les features autorisées pour (Membre, Contexte)
-    Sec->>DB: Reconstitution des Permissions via RoleAssignments
-    DB-->>Sec: Retourne les Features attribuées (ex: [ADMIN_MENU_MEMBRES, MEMBER_EVENT_SCAN])
-    Sec-->>UI: Liste des codes Features + Actions accordées
-    UI->>UI: Filtre dynamiquement les éléments de menu & boutons affichés
-    UI-->>User: Rendu personnalisé adapté aux droits exacts
+    Note over Membre,DB: 1. Connexion réussie (Login)
+    Membre->>EventListener: LoginSuccessEvent
+    EventListener->>Resolver: getGrantedFeatures(Membre)
+    Resolver->>DB: Reconstitution des permissions via RoleAssignments
+    DB-->>Resolver: [ADMIN_MENU_MEMBRES, MEMBER_EVENT_SCAN, ...]
+    Resolver->>Cache: Enregistre la clé `user_features_{id}`
+
+    Note over Membre,DB: 2. Requêtes ultérieures (Backoffice / API)
+    Membre->>Resolver: isFeatureGranted('ADMIN_MENU_MEMBRES')
+    Resolver->>Cache: Récupération directe depuis la clé `user_features_{id}`
+    Cache-->>Resolver: Features autorisées
+
+    Note over Membre,DB: 3. Déconnexion (Logout)
+    Membre->>EventListener: LogoutEvent
+    EventListener->>Resolver: invalidateCache(Membre)
+    Resolver->>Cache: Suppression de la clé `user_features_{id}`
 ```
 
----
-
-## 5. Exemple de Structure JSON API (`/api/features`)
-
-L'API REST expose les entités `Feature` pour alimenter le front-end React ou les composants Twig :
-
-```json
-[
-  {
-    "id": 1,
-    "code": "ADMIN_MENU_MEMBRES",
-    "label": "Gestion des Membres",
-    "category": "ADMIN_MENU",
-    "description": "Permet d'accéder à la liste et aux fiches des membres dans l'administration.",
-    "targetRoute": "app_admin_membre_index",
-    "icon": "fas fa-users",
-    "sortOrder": 10
-  },
-  {
-    "id": 2,
-    "code": "MEMBER_EVENT_SCAN",
-    "label": "Scan QR Code Présence",
-    "category": "MEMBER_SPACE",
-    "description": "Scanneur QR Code caméra pour valider la présence lors d'un événement.",
-    "targetRoute": "/espace-membre/events",
-    "icon": "fas fa-qrcode",
-    "sortOrder": 20
-  }
-]
-```
-
----
-
-## 6. Prochaines Étapes de Déploiement
-
-1. Mettre à jour l'entité PHP `Feature` dans `src/Entity/Feature.php`.
-2. Ajouter les tests unitaires / d'intégration correspondants dans `tests/Entity/FeatureTest.php`.
-3. Valider l'exécution des tests PHPUnit et des exigences de qualité.
+### Principes Clés du Cache :
+1. **Création au Login** : Dès qu'une connexion réussie se produit (`LoginSuccessEvent`), `PermissionResolver` calcule l'ensemble des fonctionnalités autorisées pour le membre et les stocke dans le cache sous la clé `user_features_{id}`.
+2. **Utilisation sur chaque requête** :
+   - Dans **Twig** (Admin Backoffice) : Les fonctions `is_feature_granted('FEATURE_CODE')` et `get_granted_features()` vérifient la présence de la fonctionnalité dans le cache.
+   - Dans l'**API / Espace Membre React** : Les endpoints `/api/login_check` et `/api/me` renvoient les `features` directement depuis le cache.
+3. **Invalidation au Logout** : Lors de la déconnexion (`LogoutEvent`), la clé de cache du membre est automatiquement supprimée (`invalidateCache`).
+4. **Prise en compte des modifications de permissions** : Toute modification apportée aux rôles ou permissions d'un membre en base de données ne sera effective qu'à partir de sa prochaine connexion (après sa déconnexion).

@@ -26,40 +26,64 @@
                 </div>
             </div>
 
-            <!-- Navigation Links -->
+            <!-- Navigation Links Dynamic via Feature Checks -->
             <nav class="p-4 space-y-1 text-sm font-medium">
+                {% if is_granted('ROLE_ADMIN') or is_feature_granted('ADMIN_MENU_DASHBOARD') %}
                 <a href="/admin/dashboard" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route == 'admin_dashboard' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-chart-pie w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Tableau de Bord
                 </a>
+                {% endif %}
+
+                {% if is_granted('ROLE_ADMIN') or is_feature_granted('ADMIN_MENU_FIANGONANA') %}
                 <a href="/admin/fiangonana" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_fiangonana' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-church w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Paroisses (Fiangonana)
                 </a>
+                {% endif %}
+
+                {% if is_granted('ROLE_ADMIN') or is_feature_granted('ADMIN_MENU_GROUPES') %}
                 <a href="/admin/groupes" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_groupe' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-map-location-dot w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Zones (Groupes)
                 </a>
+                {% endif %}
+
+                {% if is_granted('ROLE_ADMIN') or is_feature_granted('ADMIN_MENU_ASSOCIATIONS') %}
                 <a href="/admin/associations" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_association' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-people-group w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Associations
                 </a>
+                {% endif %}
+
+                {% if is_granted('ROLE_ADMIN') or is_feature_granted('ADMIN_MENU_TYPES_EVENEMENT') %}
                 <a href="/admin/types-evenement" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_type_evenement' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-tags w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Types d'Événements
                 </a>
+                {% endif %}
+
+                {% if is_granted('ROLE_ADMIN') or is_feature_granted('ADMIN_MENU_ROLES') %}
                 <a href="/admin/roles" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_role' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-user-shield w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Rôles & Sécurité
                 </a>
+                {% endif %}
+
+                {% if is_granted('ROLE_ADMIN') or is_feature_granted('ADMIN_MENU_MEMBRES') %}
                 <a href="/admin/membres" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route starts with 'admin_membre' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-users w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Membres
                 </a>
+                {% endif %}
+
+                {% if is_granted('ROLE_ADMIN') or is_feature_granted('ADMIN_MENU_PRESENCES') %}
                 <a href="/admin/presences" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group {% if current_route == 'admin_presences' %}bg-indigo-800 text-white font-semibold{% endif %}">
                     <i class="fa-solid fa-qrcode w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Présences & Scans
                 </a>
+                {% endif %}
+
                 <a href="/api" target="_blank" class="flex items-center px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition group">
                     <i class="fa-solid fa-code w-5 mr-3 text-indigo-300 group-hover:text-white"></i>
                     Documentation API
@@ -80,7 +104,9 @@
                             A
                         </span>
                         <div class="hidden sm:block text-right">
-                            <p class="font-semibold text-slate-700 leading-none">Administrateur</p>
+                            <p class="font-semibold text-slate-700 leading-none">
+                                {% if app.user %}{{ app.user.prenom }} {{ app.user.nom }}{% else %}Administrateur{% endif %}
+                            </p>
                             <p class="text-xs text-slate-500 mt-1">Paroisse Behoririka</p>
                         </div>
                     </div>

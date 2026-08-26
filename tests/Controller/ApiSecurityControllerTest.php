@@ -5,6 +5,7 @@ namespace App\Tests\Controller;
 use PHPUnit\Framework\TestCase;
 use App\Controller\ApiSecurityController;
 use App\Entity\Membre;
+use App\Service\PermissionResolver;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -33,7 +34,12 @@ class ApiSecurityControllerTest extends TestCase
             return null;
         });
 
-        $controller = new ApiSecurityController();
+        $permissionResolver = $this->createMock(PermissionResolver::class);
+        $permissionResolver->method('getGrantedFeatures')->willReturn([
+            'ADMIN_MENU_DASHBOARD' => ['READ']
+        ]);
+
+        $controller = new ApiSecurityController($permissionResolver);
         $controller->setContainer($container);
 
         $response = $controller->login();
@@ -43,6 +49,8 @@ class ApiSecurityControllerTest extends TestCase
         $data = json_decode($response->getContent(), true);
         $this->assertEquals('test@example.com', $data['email']);
         $this->assertEquals('Ratsimba', $data['nom']);
+        $this->assertArrayHasKey('features', $data);
+        $this->assertEquals(['READ'], $data['features']['ADMIN_MENU_DASHBOARD']);
     }
 
     public function testMeReturnsUnauthorizedWhenNotLoggedIn(): void
@@ -57,7 +65,9 @@ class ApiSecurityControllerTest extends TestCase
             return null;
         });
 
-        $controller = new ApiSecurityController();
+        $permissionResolver = $this->createMock(PermissionResolver::class);
+
+        $controller = new ApiSecurityController($permissionResolver);
         $controller->setContainer($container);
 
         $response = $controller->me();
