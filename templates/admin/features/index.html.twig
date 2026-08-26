@@ -1,0 +1,100 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Gestion des Fonctionnalités (Features) - Administration{% endblock %}
+{% block header_title %}Gestion des Fonctionnalités (Features){% endblock %}
+
+{% block body %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <!-- Header with Actions -->
+    <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-base font-bold text-slate-800">Liste des Fonctionnalités du Système</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Recensement de tous les menus et actions pour le contrôle d'accès dynamique.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="/admin/roles" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Retour aux Rôles</span>
+            </a>
+            <a href="/admin/features/nouveau" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
+                <i class="fa-solid fa-plus"></i>
+                <span>Nouvelle Feature</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                <tr>
+                    <th class="py-3.5 px-6">Ordre & Code</th>
+                    <th class="py-3.5 px-6">Libellé</th>
+                    <th class="py-3.5 px-6">Catégorie</th>
+                    <th class="py-3.5 px-6">Route / Destination</th>
+                    <th class="py-3.5 px-6 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for f in features %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold flex items-center justify-center">
+                                    {{ f.sortOrder }}
+                                </span>
+                                <span class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                                    {{ f.code }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 font-medium text-slate-800">
+                            <div class="flex items-center space-x-2">
+                                {% if f.icon %}
+                                    <i class="{{ f.icon }} text-indigo-500 w-4"></i>
+                                {% endif %}
+                                <span>{{ f.label }}</span>
+                            </div>
+                            {% if f.description %}
+                                <p class="text-xs text-slate-400 mt-0.5">{{ f.description }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-6 text-xs">
+                            {% if f.category == 'ADMIN_MENU' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full font-semibold bg-sky-50 text-sky-700 border border-sky-100">
+                                    <i class="fa-solid fa-gauge mr-1"></i> Admin Menu
+                                </span>
+                            {% elseif f.category == 'MEMBER_SPACE' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    <i class="fa-solid fa-user-group mr-1"></i> Espace Membre
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full font-semibold bg-slate-100 text-slate-600">
+                                    {{ f.category|default('GENERAL') }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-6 text-xs font-mono text-slate-500">
+                            {{ f.targetRoute|default('N/A') }}
+                        </td>
+                        <td class="py-4 px-6 text-right space-x-2">
+                            <a href="/admin/features/{{ f.id }}/editer" title="Éditer Feature" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <form method="POST" action="/admin/features/{{ f.id }}/supprimer" class="inline-block" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette fonctionnalité ?');">
+                                <button type="submit" title="Supprimer Feature" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-400">Aucune fonctionnalité enregistrée.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Affectation des Permissions - {{ role.name }}{% endblock %}
+{% block header_title %}Affectation des Permissions : {{ role.name }}{% endblock %}
+
+{% block body %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <!-- Header with Actions -->
+    <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-3">
+                <span class="px-3 py-1 rounded-lg text-xs font-mono font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wider">
+                    {{ role.name }}
+                </span>
+                <h3 class="text-base font-bold text-slate-800">Matrice d'Habilitations & Features</h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Sélectionnez les actions autorisées pour chaque fonctionnalité sur ce rôle.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="/admin/roles" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Retour aux Rôles</span>
+            </a>
+            <a href="/admin/features" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition border border-indigo-100">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Gérer les Features</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Form & Permissions Table -->
+    <form method="POST">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
+                    <tr>
+                        <th class="py-3.5 px-6">Fonctionnalité (Feature)</th>
+                        <th class="py-3.5 px-6">Catégorie</th>
+                        <th class="py-3.5 px-6 text-center">READ (Lecture)</th>
+                        <th class="py-3.5 px-6 text-center">WRITE (Écriture)</th>
+                        <th class="py-3.5 px-6 text-center">ADMIN (Total)</th>
+                        <th class="py-3.5 px-6 text-center">EXECUTE (Action)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for f in features %}
+                        {% set activeActions = rolePermissionsMap[f.id]|default([]) %}
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="py-4 px-6">
+                                <div class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                                    {% if f.icon %}<i class="{{ f.icon }} text-indigo-500 w-4"></i>{% endif %}
+                                    <span>{{ f.label }}</span>
+                                </div>
+                                <div class="text-xs font-mono text-indigo-600 mt-0.5">{{ f.code }}</div>
+                                {% if f.description %}
+                                    <p class="text-xs text-slate-400 mt-1">{{ f.description }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-6 text-xs">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600">
+                                    {{ f.category|default('GENERAL') }}
+                                </span>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <label class="inline-flex items-center justify-center cursor-pointer">
+                                    <input type="checkbox" name="permissions[{{ f.id }}][]" value="READ" {% if 'READ' in activeActions %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                </label>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <label class="inline-flex items-center justify-center cursor-pointer">
+                                    <input type="checkbox" name="permissions[{{ f.id }}][]" value="WRITE" {% if 'WRITE' in activeActions %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                </label>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <label class="inline-flex items-center justify-center cursor-pointer">
+                                    <input type="checkbox" name="permissions[{{ f.id }}][]" value="ADMIN" {% if 'ADMIN' in activeActions %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                </label>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <label class="inline-flex items-center justify-center cursor-pointer">
+                                    <input type="checkbox" name="permissions[{{ f.id }}][]" value="EXECUTE" {% if 'EXECUTE' in activeActions %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                </label>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-400">Aucune fonctionnalité enregistrée dans le système.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-end space-x-3">
+            <a href="/admin/roles" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-sm font-semibold transition">
+                Annuler
+            </a>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-2">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Enregistrer les Habilitations</span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -12,6 +12,10 @@
             <p class="text-xs text-slate-500 mt-0.5">Rôles et titres de fonction pour le contrôle d'accès contextuel (ex: PRESIDENT, TRESORIER).</p>
         </div>
         <div class="flex items-center space-x-3">
+            <a href="/admin/features" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition border border-slate-200">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Gérer les Features</span>
+            </a>
             <a href="/admin/roles/nouveau" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center space-x-2 transition shadow-sm">
                 <i class="fa-solid fa-plus"></i>
                 <span>Nouveau Rôle</span>
@@ -26,7 +30,7 @@
                 <tr>
                     <th class="py-3.5 px-6">ID & Intitulé Rôle</th>
                     <th class="py-3.5 px-6">Description</th>
-                    <th class="py-3.5 px-6">Permissions Associées</th>
+                    <th class="py-3.5 px-6">Permissions & Features</th>
                     <th class="py-3.5 px-6 text-right">Actions</th>
                 </tr>
             </thead>
@@ -47,11 +51,14 @@
                             {{ r.description|default('Aucune description') }}
                         </td>
                         <td class="py-4 px-6 text-xs font-medium text-slate-700">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                                <i class="fa-solid fa-key mr-1.5 text-[10px]"></i> {{ r.permissions|length }} permission(s)
-                            </span>
+                            <a href="/admin/roles/{{ r.id }}/permissions" class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition">
+                                <i class="fa-solid fa-key mr-1.5 text-xs"></i> {{ r.permissions|length }} permission(s) (Gérer)
+                            </a>
                         </td>
                         <td class="py-4 px-6 text-right space-x-2">
+                            <a href="/admin/roles/{{ r.id }}/permissions" title="Gérer Permissions" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </a>
                             <a href="/admin/roles/{{ r.id }}/editer" title="Éditer Rôle" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </a>

@@ -149,5 +149,27 @@ sequenceDiagram
 2. **Utilisation sur chaque requête** :
    - Dans **Twig** (Admin Backoffice) : Les fonctions `is_feature_granted('FEATURE_CODE')` et `get_granted_features()` vérifient la présence de la fonctionnalité dans le cache.
    - Dans l'**API / Espace Membre React** : Les endpoints `/api/login_check` et `/api/me` renvoient les `features` directement depuis le cache.
-3. **Invalidation au Logout** : Lors de la déconnexion (`LogoutEvent`), la clé de cache du membre est automatiquement supprimée (`invalidateCache`).
+3. **Invalidation au Logout** : Lors de la déconnexion (`LogoutEvent`), la clé de cache du membre me est automatiquement supprimée (`invalidateCache`).
 4. **Prise en compte des modifications de permissions** : Toute modification apportée aux rôles ou permissions d'un membre en base de données ne sera effective qu'à partir de sa prochaine connexion (après sa déconnexion).
+
+---
+
+## 5. Administration & Outils CLI
+
+### 5.1 Commande CLI : `app:grant-admin`
+
+Pour affecter rapidement les droits d'administration à un membre existant via la ligne de commande :
+
+```bash
+php bin/console app:grant-admin membre@paroisse.mg
+```
+
+Cette commande recherche le membre par son adresse email et lui attribue le rôle `ROLE_ADMIN`.
+
+### 5.2 Interfaces d'Administration
+
+1. **Gestion des Fonctionnalités (`/admin/features`)** :
+   - Liste, création, modification et suppression des entités `Feature`.
+   - Configuration du `code`, `label`, `category`, `targetRoute`, `icon` et `sortOrder`.
+2. **Matrice des Permissions par Rôle (`/admin/roles/{id}/permissions`)** :
+   - Interface graphique sous forme de grille pour attribuer/retirer les permissions (`READ`, `WRITE`, `ADMIN`, `EXECUTE`) de chaque `Feature` pour un `Role` sélectionné.

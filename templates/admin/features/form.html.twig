@@ -1,0 +1,73 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}{% if isEdit %}Éditer{% else %}Créer{% endif %} une Fonctionnalité - Administration{% endblock %}
+{% block header_title %}{% if isEdit %}Éditer la Fonctionnalité{% else %}Créer une Fonctionnalité{% endif %}{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
+    <div class="flex items-center justify-between border-b border-slate-200 pb-4 mb-6">
+        <div>
+            <h3 class="text-base font-bold text-slate-800">{% if isEdit %}Modifier {{ feature.code }}{% else %}Nouvelle Fonctionnalité (Feature){% endif %}</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Remplissez les détails ci-dessous pour créer ou éditer une fonctionnalité système.</p>
+        </div>
+        <a href="/admin/features" class="text-slate-500 hover:text-slate-800 text-sm font-semibold flex items-center space-x-1">
+            <i class="fa-solid fa-xmark"></i>
+            <span>Annuler</span>
+        </a>
+    </div>
+
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Code Fonctionnalité *</label>
+            <input type="text" name="code" value="{{ feature ? feature.code : '' }}" required placeholder="ex: ADMIN_MENU_MEMBRES" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 font-mono text-sm uppercase">
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Libellé Affichable *</label>
+            <input type="text" name="label" value="{{ feature ? feature.label : '' }}" required placeholder="ex: Gestion des Membres" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Catégorie</label>
+                <select name="category" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+                    <option value="ADMIN_MENU" {% if feature and feature.category == 'ADMIN_MENU' %}selected{% endif %}>ADMIN_MENU (Menu Backoffice)</option>
+                    <option value="MEMBER_SPACE" {% if feature and feature.category == 'MEMBER_SPACE' %}selected{% endif %}>MEMBER_SPACE (Espace Membre)</option>
+                    <option value="API_ACTION" {% if feature and feature.category == 'API_ACTION' %}selected{% endif %}>API_ACTION (Action API)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Ordre d'Affichage</label>
+                <input type="number" name="sortOrder" value="{{ feature ? feature.sortOrder : 0 }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Route / Path Cible</label>
+                <input type="text" name="targetRoute" value="{{ feature ? feature.targetRoute : '' }}" placeholder="ex: app_admin_membre_index ou /espace-membre/events" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Icône (FontAwesome)</label>
+                <input type="text" name="icon" value="{{ feature ? feature.icon : '' }}" placeholder="ex: fa-solid fa-users" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Description</label>
+            <textarea name="description" rows="3" placeholder="Description fonctionnelle..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm">{{ feature ? feature.description : '' }}</textarea>
+        </div>
+
+        <div class="pt-4 flex justify-end space-x-3 border-t border-slate-100">
+            <a href="/admin/features" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-semibold transition">
+                Annuler
+            </a>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition">
+                Enregistrer
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
