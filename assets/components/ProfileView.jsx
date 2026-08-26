@@ -4,6 +4,8 @@ export function ProfileView({ member, onRefresh }) {
   const [showCardModal, setShowCardModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [cardData, setCardData] = useState(null);
+  const [loadingCard, setLoadingCard] = useState(false);
 
   // Profile Form State
   const [formData, setFormData] = useState({
@@ -39,6 +41,15 @@ export function ProfileView({ member, onRefresh }) {
         adresse: member.adresse || '',
       });
       setPhotoPreview(member.photoUrl || null);
+
+      if (member.id) {
+        setLoadingCard(true);
+        fetch(`/api/membres/${member.id}/carte?format=json`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => setCardData(data))
+          .catch((err) => console.error('Error fetching member card data:', err))
+          .finally(() => setLoadingCard(false));
+      }
     }
   }, [member]);
 
@@ -384,10 +395,19 @@ export function ProfileView({ member, onRefresh }) {
           {/* QR Code Quick View Card */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col items-center justify-center text-center space-y-4">
             <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
-              <i className="fa-solid fa-qrcode text-emerald-500 mr-2"></i> Token QR Code Présence
+                <i className="fa-solid fa-qrcode text-emerald-500 mr-2"></i> Carte & QR Code Présence
             </h3>
 
-            {member.qrCodeToken ? (
+              {cardData && cardData.qrCodeBase64 ? (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center space-y-2">
+                  <img
+                    src={`data:image/png;base64,${cardData.qrCodeBase64}`}
+                    alt="QR Code"
+                    className="w-36 h-36 object-contain"
+                  />
+                  <p className="text-[10px] font-mono text-slate-400">Token: {cardData.qrCodeToken}</p>
+                </div>
+              ) : member.qrCodeToken ? (
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center space-y-2">
                 <img
                   src={`/api/membres/${member.id}/qr-code`}
@@ -404,9 +424,9 @@ export function ProfileView({ member, onRefresh }) {
               href={`/api/membres/${member.id}/carte`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center"
             >
-              Ouvrir la carte officielle format impression &rarr;
+                <i className="fa-solid fa-print mr-1.5"></i> Ouvrir la carte officielle format impression &rarr;
             </a>
           </div>
         </div>
@@ -512,33 +532,70 @@ export function ProfileView({ member, onRefresh }) {
               <i className="fa-solid fa-id-card text-indigo-600 mr-2"></i> Carte Officielle Membre
             </h3>
 
-            <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 text-center space-y-3">
-              <div className="w-16 h-16 rounded-full mx-auto overflow-hidden bg-indigo-100 border-2 border-indigo-200 flex items-center justify-center">
-                {member.photoUrl ? (
-                  <img src={member.photoUrl} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-indigo-700 font-extrabold text-xl">{member.prenom?.charAt(0)}</span>
-                )}
-              </div>
-              <div>
-                <p className="font-extrabold text-slate-800 text-base">{member.prenom} {member.nom}</p>
-                <p className="text-xs text-slate-500">{member.fiangonana ? member.fiangonana.nom : 'Fiangonana'}</p>
+            {/* Stylized Badge Preview */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 flex flex-col relative">
+              <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-4 flex justify-between items-center">
+                <div>
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-blue-200">Carte de Membre Officielle</h2>
+                  <h1 className="text-sm font-bold truncate max-w-[280px]">
+                    {cardData?.fiangonanaNom || (member.fiangonana ? member.fiangonana.nom : 'Fiangonana')}
+                  </h1>
+                </div>
+                <span className="bg-blue-500/30 text-white text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded border border-blue-400/30">
+                  Membre
+                </span>
               </div>
 
-              {member.qrCodeToken && (
-                <div className="bg-white p-3 rounded-xl border border-slate-200 inline-block shadow-sm">
-                  <img src={`/api/membres/${member.id}/qr-code`} className="w-40 h-40 object-contain mx-auto" />
+              <div className="p-5 flex flex-row items-start space-x-4">
+                <div className="flex-1 space-y-2 text-left">
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Nom & Prénom</p>
+                    <p className="text-base font-bold text-slate-800 leading-snug">{member.nom} {member.prenom}</p>
+                  </div>
+
+                  <div className="space-y-1 text-xs">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Zone / Groupe</p>
+                      <p className="text-slate-700 font-medium text-[11px]">{cardData?.groupeNom || member.zoneGeographique?.nom || 'Non spécifié'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Associations</p>
+                      <p className="text-slate-700 font-medium text-[11px]">{cardData?.associationsStr || 'Aucune'}</p>
+                    </div>
+                  </div>
                 </div>
-              )}
+
+                <div className="flex flex-col items-center justify-center bg-slate-50 p-2 rounded-xl border border-slate-100 shadow-inner">
+                  {cardData?.qrCodeBase64 ? (
+                    <img className="w-24 h-24 mix-blend-multiply" src={`data:image/png;base64,${cardData.qrCodeBase64}`} alt="QR Code" />
+                  ) : (
+                    <img className="w-24 h-24 mix-blend-multiply" src={`/api/membres/${member.id}/qr-code`} alt="QR Code" />
+                  )}
+                  <span className="text-[7px] uppercase tracking-widest text-slate-400 mt-1 font-bold">Scan Présence</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 px-5 py-2.5 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500">
+                <span>ID Membre: #{member.id}</span>
+                <span className="font-medium">Validité Permanente</span>
+              </div>
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowCardModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
+              >
+                Fermer
+              </button>
               <a
                 href={`/api/membres/${member.id}/carte`}
                 target="_blank"
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center"
               >
-                Imprimer Carte PDF / HTML
+                <i className="fa-solid fa-print mr-2"></i> Imprimer la carte
               </a>
             </div>
           </div>

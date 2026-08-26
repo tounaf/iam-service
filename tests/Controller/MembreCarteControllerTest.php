@@ -110,6 +110,50 @@ class MembreCarteControllerTest extends TestCase
         $this->assertNotEmpty($data['qrCodeBase64']);
     }
 
+    public function testInvokeReturnsJsonResponseWithCompleteMemberDetails(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Fiangonana Fenoarivo');
+
+        $groupe = new Groupe();
+        $groupe->setNom('Zone Ouest');
+
+        $assoc = new Association();
+        $assoc->setNom('Sampana Tanora');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(15);
+        $member->method('getNom')->willReturn('Rakoto');
+        $member->method('getPrenom')->willReturn('Koto');
+        $member->method('getEmail')->willReturn('koto@example.com');
+        $member->method('getTelephone')->willReturn('+261321122334');
+        $member->method('getQrCodeToken')->willReturn('token-koto-888');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getZoneGeographique')->willReturn($groupe);
+        $member->method('getAssociations')->willReturn(new ArrayCollection([$assoc]));
+
+        $twig = $this->createMock(Environment::class);
+        $controller = new MembreCarteController($twig);
+
+        $request = Request::create('/api/membres/15/carte?format=json');
+        $response = $controller->__invoke($member, $request);
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertEquals(15, $data['id']);
+        $this->assertEquals(15, $data['memberId']);
+        $this->assertEquals('Rakoto', $data['nom']);
+        $this->assertEquals('Koto', $data['prenom']);
+        $this->assertEquals('Fiangonana Fenoarivo', $data['fiangonanaNom']);
+        $this->assertEquals('Zone Ouest', $data['groupeNom']);
+        $this->assertArrayHasKey('associationsArray', $data);
+        $this->assertEquals('Sampana Tanora', $data['associationsStr']);
+        $this->assertStringContainsString('/membres/scan/token-koto-888', $data['scanUrl']);
+        $this->assertNotEmpty($data['qrCodeBase64']);
+    }
+
     public function testInvokeThrowsNotFoundForNullMember(): void
     {
         $this->expectException(NotFoundHttpException::class);

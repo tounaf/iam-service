@@ -81,7 +81,6 @@ class MembreCarteController extends AbstractController
         $format = strtolower((string) $request->query->get('format', ''));
 
         if ($format === 'json' || str_contains($acceptHeader, 'application/json')) {
-            $host = $request->getSchemeAndHttpHost() ?: 'http://localhost';
             return new JsonResponse([
                 'id' => $membre->getId(),
                 'memberId' => $membre->getId(),
@@ -92,9 +91,11 @@ class MembreCarteController extends AbstractController
                 'fiangonanaNom' => $fiangonanaNom,
                 'groupeNom' => $groupeNom,
                 'associations' => $associationsList,
+                'associationsArray' => $associationsArray,
                 'associationsStr' => $associationsStr,
                 'qrCodeToken' => $token,
                 'qrCodeBase64' => $qrCodeBase64,
+                'scanUrl' => $scanUrl,
             ], Response::HTTP_OK, [
                 'Cache-Control' => 'public, max-age=3600'
             ]);
