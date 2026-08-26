@@ -149,14 +149,27 @@ sequenceDiagram
 2. **Utilisation sur chaque requête** :
    - Dans **Twig** (Admin Backoffice) : Les fonctions `is_feature_granted('FEATURE_CODE')` et `get_granted_features()` vérifient la présence de la fonctionnalité dans le cache.
    - Dans l'**API / Espace Membre React** : Les endpoints `/api/login_check` et `/api/me` renvoient les `features` directement depuis le cache.
-3. **Invalidation au Logout** : Lors de la déconnexion (`LogoutEvent`), la clé de cache du membre me est automatiquement supprimée (`invalidateCache`).
+3. **Invalidation au Logout** : Lors de la déconnexion (`LogoutEvent`), la clé de cache du membre est automatiquement supprimée (`invalidateCache`).
 4. **Prise en compte des modifications de permissions** : Toute modification apportée aux rôles ou permissions d'un membre en base de données ne sera effective qu'à partir de sa prochaine connexion (après sa déconnexion).
 
 ---
 
 ## 5. Administration & Outils CLI
 
-### 5.1 Commande CLI : `app:grant-admin`
+### 5.1 Commande CLI : `app:seed-features`
+
+Pour approvisionner automatiquement l'ensemble des fonctionnalités prédéfinies en base de données :
+
+```bash
+php bin/console app:seed-features
+```
+
+Option de purge préalable :
+```bash
+php bin/console app:seed-features --purge
+```
+
+### 5.2 Commande CLI : `app:grant-admin`
 
 Pour affecter rapidement les droits d'administration à un membre existant via la ligne de commande :
 
@@ -166,7 +179,7 @@ php bin/console app:grant-admin membre@paroisse.mg
 
 Cette commande recherche le membre par son adresse email et lui attribue le rôle `ROLE_ADMIN`.
 
-### 5.2 Interfaces d'Administration
+### 5.3 Interfaces d'Administration
 
 1. **Gestion des Fonctionnalités (`/admin/features`)** :
    - Liste, création, modification et suppression des entités `Feature`.
