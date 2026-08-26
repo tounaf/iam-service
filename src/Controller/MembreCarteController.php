@@ -83,6 +83,7 @@ class MembreCarteController extends AbstractController
         if ($format === 'json' || str_contains($acceptHeader, 'application/json')) {
             $host = $request->getSchemeAndHttpHost() ?: 'http://localhost';
             return new JsonResponse([
+                'id' => $membre->getId(),
                 'memberId' => $membre->getId(),
                 'nom' => $nom,
                 'prenom' => $prenom,
