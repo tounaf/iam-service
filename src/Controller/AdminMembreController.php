@@ -110,20 +110,38 @@ class AdminMembreController extends AbstractController
 
             if ($action === 'add_role') {
                 $roleId = $request->request->get('role_id');
-                $contextAssocId = $request->request->get('context_association_id');
+                $contextType = $request->request->get('context_type');
+                $contextId = $request->request->get('context_id');
+                $startDateStr = $request->request->get('start_date');
+                $endDateStr = $request->request->get('end_date');
+                $exerciceYear = trim($request->request->get('exercice_year', ''));
+
                 $role = $em->getRepository(Role::class)->find($roleId);
 
                 if ($role) {
                     $assignment = new RoleAssignment();
                     $assignment->setMembre($membre);
                     $assignment->setRole($role);
-                    $assignment->setStartDate(new \DateTimeImmutable());
-                    $assignment->setExerciceYear((string)date('Y'));
+
+                    $startDate = $startDateStr ? new \DateTimeImmutable($startDateStr) : new \DateTimeImmutable();
+                    $assignment->setStartDate($startDate);
+
+                    if ($endDateStr) {
+                        $assignment->setEndDate(new \DateTimeImmutable($endDateStr));
+                    }
+
+                    $assignment->setExerciceYear($exerciceYear ?: $startDate->format('Y'));
                     $assignment->setIsActive(true);
 
-                    if ($contextAssocId) {
-                        $assocContext = $em->getRepository(Association::class)->find($contextAssocId);
+                    if ($contextType === 'association' && $contextId) {
+                        $assocContext = $em->getRepository(Association::class)->find($contextId);
                         $assignment->setAssociationContext($assocContext);
+                    } elseif ($contextType === 'groupe' && $contextId) {
+                        $groupeContext = $em->getRepository(Groupe::class)->find($contextId);
+                        $assignment->setGroupeContext($groupeContext);
+                    } elseif ($contextType === 'fiangonana' && $contextId) {
+                        $fiangonanaContext = $em->getRepository(Fiangonana::class)->find($contextId);
+                        $assignment->setFiangonanaContext($fiangonanaContext);
                     } elseif ($membre->getFiangonana()) {
                         $assignment->setFiangonanaContext($membre->getFiangonana());
                     }

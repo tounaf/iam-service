@@ -168,11 +168,13 @@ sequenceDiagram
 ```json
 {
   "membre": "/api/membres/12",
-  "roleName": "TRESORIER",
+  "role": "/api/roles/3",
   "associationContext": "/api/associations/1",
-  "startDate": "2025-01-01T00:00:00Z",
-  "exerciceYear": "2025",
-  "isActive": true}
+  "startDate": "2026-01-20T00:00:00Z",
+  "endDate": "2026-12-12T23:59:59Z",
+  "exerciceYear": "2026",
+  "isActive": true
+}
 ```
 
-*(Le membre est enregistré comme trésorier de l'association Jeunes pour l'exercice de l'année 2025)*.
+*(Le membre est enregistré avec un rôle contextuel attribué à une Association, une Zone Géographique ou une Paroisse, délimité dans le temps du 20/01/2026 au 12/12/2026)*.

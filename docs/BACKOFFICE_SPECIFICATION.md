@@ -16,7 +16,8 @@ L'administration backoffice (`/admin`) offre un espace de gestion centralisé, m
   * Rédaction d'un **compte-rendu / résumé** détaillé des activités déroulées.
   * Ajout d'**appréciations et notes dynamiques** (ex: *Très bien*, *Mauvais*, *Excellent*, *Animé*, ou notes personnalisées).
   * Galerie et téléversement de **médias multiples** (photos et vidéos de l'événement).
-* Inscrire et éditer les fiches des membres avec support de **téléchargement Glisser-Déposer (Drag-and-Drop)** pour la photo de profil.
+* Inscrire et éditer les fiches des membres avec possibilité d'**attribution directe à une ou plusieurs associations** dès la création, et support de **téléchargement Glisser-Déposer (Drag-and-Drop)** pour la photo de profil.
+* Gérer l'attribution des rôles contextuels temporaires (CRBAC) pour un membre : possibilité d'attribuer un rôle à une **Association**, une **Zone Géographique/Groupe** ou une **Paroisse/Fiangonana** avec des bornes temporelles précises (`startDate` et `endDate`, ex: du 20/01/2026 au 12/12/2026).
 * Générer et imprimer les cartes d'identité membres officielles avec QR Code unique.
 * Consulter les statistiques d'assiduité, les rapports d'activités et les taux de participation annuels.
 * Gérer les mandats et droits d'accès via le modèle de sécurité contextuel (CRBAC).
@@ -60,7 +61,7 @@ graph TD
   * `AdminTypeEvenementController` (`/admin/types-evenement`, `/admin/types-evenement/nouveau`, `/admin/types-evenement/{id}/editer`, `/admin/types-evenement/{id}/supprimer`) : Gestion des types d'événements.
   * `AdminEvenementController` (`/admin/evenements/{id}`, `/admin/evenements/{id}/update`) : Détail de l'événement, compte-rendu, notes, médias et assiduité.
   * `AdminRoleController` (`/admin/roles`) : Gestion des rôles applicatifs et permissions.
-  * `AdminMembreController` (`/admin/membres`, `/admin/membres/nouveau`, `/admin/membres/{id}/editer`) : Inscription, photo drag-and-drop, carte membre et QR code.
+  * `AdminMembreController` (`/admin/membres`, `/admin/membres/nouveau`, `/admin/membres/{id}/editer`) : Inscription avec attribution directe d'associations, attribution de rôles contextuels temporaires (Association, Groupe, Fiangonana) liés dans le temps, photo drag-and-drop, carte membre et QR code.
   * `AdminPresenceController` (`/admin/presences`) : Consolidation des événements, historique des scans et rapports.
 
 ---
