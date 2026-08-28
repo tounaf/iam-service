@@ -294,21 +294,36 @@ export function EventsView({ memberId, member }) {
 
   return (
     <div className="space-y-6">
-      {/* Participation Overview Bar & Action Buttons */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+      {/* Participation & Delay Overview Grid */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Assiduité Annuelle</span>
           <h2 className="text-3xl font-extrabold text-emerald-600">
-            {stats ? `${stats.tauxParticipation}%` : '100%'}
+            {stats ? `${stats.participationRate}%` : '100%'}
           </h2>
-          <p className="text-xs text-slate-500 mt-1">Taux de présence globale calculé sur le nombre de séances</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {stats ? `${stats.attendedActivitiesCount} sur ${stats.totalActivitiesCount} événement(s)` : 'Présence globale'}
+          </p>
+        </div>
+
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Retards / À l'Heure</span>
+          <div className="flex items-center space-x-2 mt-1">
+            <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
+              <i className="fa-solid fa-clock mr-1"></i> {stats ? stats.lateCount : 0} Retard(s)
+            </span>
+            <span className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+              <i className="fa-solid fa-check mr-1"></i> {stats ? stats.onTimeCount : 0} À l'heure
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">Taux de retard : {stats ? `${stats.lateRate}%` : '0%'}</p>
         </div>
 
         <div className="col-span-2 flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-slate-700 space-x-3">
-              <span>Présences : {stats ? stats.presencesScannees : presences.length}</span>
-              <span>• Événements : {stats ? stats.totalEvenements : events.length}</span>
+              <span>Présences : {stats ? stats.attendedActivitiesCount : presences.length}</span>
+              <span>• Total : {stats ? stats.totalActivitiesCount : events.length}</span>
             </div>
 
             <button
@@ -322,7 +337,7 @@ export function EventsView({ memberId, member }) {
           <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
             <div
               className="bg-emerald-500 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${stats ? stats.tauxParticipation : 100}%` }}
+              style={{ width: `${stats ? stats.participationRate : 100}%` }}
             ></div>
           </div>
         </div>

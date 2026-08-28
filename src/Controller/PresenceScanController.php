@@ -95,6 +95,13 @@ class PresenceScanController extends AbstractController
             $entityManager->persist($presence);
             $entityManager->flush();
 
+            // Invalidate cached attendance stats for this member
+            try {
+                if ($this->container && $this->container->has(\App\Service\AttendanceStatsService::class)) {
+                    $this->container->get(\App\Service\AttendanceStatsService::class)->invalidateMemberCache($membre, (int)$scannedAt->format('Y'));
+                }
+            } catch (\Throwable $e) {}
+
             if ($isJsonRequest) {
                 return new JsonResponse([
                     'success' => true,

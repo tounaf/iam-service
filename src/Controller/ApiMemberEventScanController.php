@@ -146,6 +146,11 @@ class ApiMemberEventScanController extends AbstractController
         $em->persist($presence);
         $em->flush();
 
+        // Invalidate attendance stats cache for target member
+        if ($this->container->has(\App\Service\AttendanceStatsService::class)) {
+            $this->container->get(\App\Service\AttendanceStatsService::class)->invalidateMemberCache($targetMembre);
+        }
+
         return $this->json([
             'message' => sprintf('Présence de %s %s validée avec succès !', $targetMembre->getPrenom(), $targetMembre->getNom()),
             'membre' => [

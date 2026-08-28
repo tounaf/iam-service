@@ -84,7 +84,10 @@ class MembreParticipationControllerTest extends TestCase
             };
         });
 
-        $controller = new MembreParticipationController($em);
+        $cache = new \Symfony\Component\Cache\Adapter\ArrayAdapter();
+        $statsService = new \App\Service\AttendanceStatsService($em, $cache);
+
+        $controller = new MembreParticipationController($statsService);
         $request = Request::create('/api/membres/1/participation-stats?year=2026');
 
         $response = $controller($membre, $request);
