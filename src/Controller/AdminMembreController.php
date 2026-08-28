@@ -216,6 +216,46 @@ class AdminMembreController extends AbstractController
         $roles = $em->getRepository(Role::class)->findAll();
         $presences = $em->getRepository(Presence::class)->findBy(['membre' => $membre], ['scannedAt' => 'DESC']);
 
+        // Fetch cotisations and dons
+        $year = (int)date('Y');
+        $cotisations = $em->getRepository(\App\Entity\Cotisation::class)->findBy(['membre' => $membre, 'annee' => $year], ['paidAt' => 'DESC']);
+        $dons = $em->getRepository(\App\Entity\Don::class)->findBy(['membre' => $membre], ['paidAt' => 'DESC']);
+
+        // Build 12 months matrix x 4 tranches
+        $monthsMatrix = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $monthsMatrix[$m] = [
+                'mois' => $m,
+                'tranches' => [1 => null, 2 => null, 3 => null, 4 => null],
+                'totalPaid' => 0.0,
+            ];
+        }
+
+        $totalCotisationsYear = 0.0;
+        $monthsPaidCount = 0;
+
+        foreach ($cotisations as $c) {
+            $m = $c->getMois();
+            $t = $c->getTranche();
+            $val = (float)$c->getMontant();
+            if ($m >= 1 && $m <= 12 && $t >= 1 && $t <= 4) {
+                $monthsMatrix[$m]['tranches'][$t] = $c;
+                $monthsMatrix[$m]['totalPaid'] += $val;
+                $totalCotisationsYear += $val;
+            }
+        }
+
+        foreach ($monthsMatrix as $m => $data) {
+            if ($data['totalPaid'] > 0) {
+                $monthsPaidCount++;
+            }
+        }
+
+        $totalDons = 0.0;
+        foreach ($dons as $d) {
+            $totalDons += (float)$d->getMontant();
+        }
+
         return $this->render('admin/membres/form.html.twig', [
             'current_route' => 'admin_membre',
             'isEdit' => true,
@@ -225,6 +265,13 @@ class AdminMembreController extends AbstractController
             'associations' => $associations,
             'roles' => $roles,
             'presences' => $presences,
+            'cotisations' => $cotisations,
+            'dons' => $dons,
+            'monthsMatrix' => $monthsMatrix,
+            'monthsPaidCount' => $monthsPaidCount,
+            'totalCotisationsYear' => $totalCotisationsYear,
+            'totalDons' => $totalDons,
+            'year' => $year,
         ]);
     }
 

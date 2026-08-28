@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { ProfileView } from './components/ProfileView';
 import { AffiliationsView } from './components/AffiliationsView';
 import { EventsView } from './components/EventsView';
+import { FinancesView } from './components/FinancesView';
 import { LoginView } from './components/LoginView';
 
 function App() {
@@ -155,6 +156,17 @@ function App() {
           >
             <i className="fa-solid fa-calendar-check mr-2"></i> Mes Événements & Assiduité
           </button>
+
+          <button
+            onClick={() => setActiveTab('finances')}
+            className={`py-3 px-4 text-xs font-bold flex items-center border-b-2 whitespace-nowrap transition ${
+              activeTab === 'finances'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <i className="fa-solid fa-hand-holding-dollar mr-2"></i> Cotisations & Dons
+          </button>
         </div>
       </header>
 
@@ -163,6 +175,7 @@ function App() {
         {activeTab === 'profile' && <ProfileView member={member} onRefresh={fetchAuthenticatedMember} />}
         {activeTab === 'affiliations' && <AffiliationsView member={member} />}
         {activeTab === 'events' && <EventsView memberId={currentUser.id} member={member} />}
+        {activeTab === 'finances' && <FinancesView memberId={currentUser.id} member={member} />}
       </main>
 
       {/* Footer */}

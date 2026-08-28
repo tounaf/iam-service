@@ -20,6 +20,7 @@ L'administration backoffice (`/admin`) offre un espace de gestion centralisé, m
 * Gérer l'attribution des rôles contextuels temporaires (CRBAC) pour un membre : possibilité d'attribuer un rôle à une **Association**, une **Zone Géographique/Groupe** ou une **Paroisse/Fiangonana** avec des bornes temporelles précises (`startDate` et `endDate`, ex: du 20/01/2026 au 12/12/2026).
 * Générer et imprimer les cartes d'identité membres officielles avec QR Code unique.
 * Consulter les statistiques d'assiduité, les rapports d'activités, les taux de participation et les taux de retard des membres aux événements.
+* Gérer les **Cotisations Mensuelles** (saisie en jusqu'à 4 tranches par mois avec suivi du nombre de mois réglés sur 12) et les **Dons Libres** dans l'onglet dédié du profil membre.
 * Gérer les mandats et droits d'accès via le modèle de sécurité contextuel (CRBAC).
 
 ---

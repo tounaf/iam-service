@@ -58,6 +58,10 @@
                 <i class="fa-solid fa-calendar-check"></i>
                 <span>Historique des Présences ({{ presences|length }})</span>
             </button>
+            <button onclick="switchTab('tab-finances')" id="tab-btn-finances" class="tab-link pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+                <span>Cotisations ({{ monthsPaidCount }}/12 mois) & Dons</span>
+            </button>
         </div>
     {% endif %}
 
@@ -346,6 +350,162 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: Cotisations & Dons -->
+        <div id="tab-finances" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-8">
+            <!-- Suivi Annuel des Cotisations Mensuelles (4 Tranches) -->
+            <div class="space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Suivi des Cotisations Mensuelles (Année {{ year }})</h4>
+                        <p class="text-xs text-slate-500">Cotisations payables par mois (jusqu'à 4 tranches par mois)</p>
+                    </div>
+                    <div class="flex items-center space-x-3 text-xs font-bold">
+                        <span class="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">{{ monthsPaidCount }}/12 mois réglés</span>
+                        <span class="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200">Total: {{ totalCotisationsYear|number_format(2, ',', ' ') }} Ar</span>
+                    </div>
+                </div>
+
+                <!-- Months Matrix Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 font-semibold uppercase text-slate-400 border-b border-slate-200">
+                            <tr>
+                                <th class="py-2.5 px-3">Mois</th>
+                                <th class="py-2.5 px-3 text-center">Tranche 1 (1/4)</th>
+                                <th class="py-2.5 px-3 text-center">Tranche 2 (2/4)</th>
+                                <th class="py-2.5 px-3 text-center">Tranche 3 (3/4)</th>
+                                <th class="py-2.5 px-3 text-center">Tranche 4 (4/4)</th>
+                                <th class="py-2.5 px-3 text-right">Total Mois</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-mono">
+                            {% set moisNoms = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+                            {% for mIdx, mData in monthsMatrix %}
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="py-3 px-3 font-sans font-bold text-slate-800">{{ moisNoms[mIdx] }}</td>
+                                    {% for tIdx in 1..4 %}
+                                        {% set item = mData.tranches[tIdx] %}
+                                        <td class="py-3 px-3 text-center">
+                                            {% if item %}
+                                                <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 block" title="{{ item.paidAt }}">
+                                                    {{ item.montant|number_format(0, ',', ' ') }} Ar
+                                                </span>
+                                            {% else %}
+                                                <span class="text-slate-300 italic">-</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                    <td class="py-3 px-3 text-right font-bold text-indigo-700">
+                                        {{ mData.totalPaid|number_format(0, ',', ' ') }} Ar
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Form Saisie Manuelle Cotisation -->
+                <form method="POST" action="/admin/membres/{{ membre.id }}/add-cotisation" class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                    <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Saisir un Paiement de Cotisation</h5>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Mois *</label>
+                            <select name="mois" required class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                                {% for mIdx in 1..12 %}
+                                    <option value="{{ mIdx }}" {% if mIdx == 'now'|date('n') %}selected{% endif %}>{{ moisNoms[mIdx] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tranche (Paiement en 4 fois) *</label>
+                            <select name="tranche" required class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                                <option value="1">1ère tranche (1/4)</option>
+                                <option value="2">2ème tranche (2/4)</option>
+                                <option value="3">3ème tranche (3/4)</option>
+                                <option value="4">4ème tranche (4/4)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Montant Payé (Ar) *</label>
+                            <input type="number" step="100" name="montant" required placeholder="Ex: 5000" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Entité Bénéficiaire *</label>
+                            <select name="context_type" required class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                                <option value="fiangonana">Paroisse / Église</option>
+                                <option value="association">Association</option>
+                                <option value="groupe">Zone / Groupe</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-1">
+                        <input type="hidden" name="annee" value="{{ year }}">
+                        <span class="text-[11px] text-slate-400">Paiement saisi par l'utilisateur ayant droit.</span>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition shadow-sm">
+                            <i class="fa-solid fa-check mr-1"></i> Enregistrer la Cotisation
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Section Dons Libres -->
+            <div class="space-y-4 pt-4 border-t border-slate-100">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Gestion des Dons Libres</h4>
+                    <span class="px-3 py-1 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 font-bold text-xs">Total Dons: {{ totalDons|number_format(2, ',', ' ') }} Ar</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 font-semibold uppercase text-slate-400 border-b border-slate-200">
+                            <tr>
+                                <th class="py-2.5 px-3">Date</th>
+                                <th class="py-2.5 px-3">Libellé / Motif</th>
+                                <th class="py-2.5 px-3 text-right">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for d in dons %}
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="py-2.5 px-3 font-mono text-slate-400">{{ d.paidAt|date('d/m/Y H:i') }}</td>
+                                    <td class="py-2.5 px-3 font-bold text-slate-800">{{ d.libelle }}</td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-bold text-purple-700">{{ d.montant|number_format(2, ',', ' ') }} Ar</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="py-4 text-center text-slate-400">Aucun don libre enregistré pour ce membre.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Form Saisie Manuelle Don -->
+                <form method="POST" action="/admin/membres/{{ membre.id }}/add-don" class="bg-purple-50/50 p-5 rounded-2xl border border-purple-100 space-y-4">
+                    <h5 class="text-xs font-bold text-purple-900 uppercase tracking-wider">Enregistrer un Don Libre</h5>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Montant du Don (Ar) *</label>
+                            <input type="number" step="500" name="montant" required placeholder="Ex: 20000" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Libellé / Motif *</label>
+                            <input type="text" name="libelle" required placeholder="Ex: Don de remerciement, Projet travaux..." class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-1">
+                        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition shadow-sm">
+                            <i class="fa-solid fa-heart mr-1"></i> Enregistrer le Don
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     {% endif %}

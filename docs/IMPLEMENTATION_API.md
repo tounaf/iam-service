@@ -148,6 +148,11 @@ Lorsqu'un membre présente sa carte lors d'un événement, d'une activité de gr
 #### 4. Suivi et Taux de Participation Annuel
 *   `GET /api/membres/{id}/participation-stats` : Calcule le taux de participation annuel d'un membre (`?year=2026`), fournissant le nombre total d'activités, le nombre d'activités assistées, le pourcentage de participation, le nombre et le taux de retards (`lateCount`, `lateRate`), ainsi que les journaux de présence enrichis de l'état de retard (`isLate`, `delayMinutes`).
 
+#### 5. Gestion Financière : Cotisations Mensuelles & Dons
+*   `GET /api/membres/{id}/finances` : Récupère la synthèse financière annuelle du membre (grille des 12 mois x 4 tranches, nombre de mois cotisés sur 12, total cotisations et liste des dons libres).
+*   `POST /api/membres/{id}/cotisations/add` : Enregistre un paiement de cotisation pour un mois (mois 1 à 12) et une tranche spécifique (1 à 4).
+*   `POST /api/membres/{id}/dons/add` : Enregistre un don libre avec montant et libelle.
+
 ---
 
 ## 4. Déploiement & Initialisation de la Base MySQL
