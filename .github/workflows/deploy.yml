@@ -47,6 +47,10 @@ jobs:
           echo "DATABASE_URL=mysql://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_DATABASE }}" >> .env
           cat .env
           
+      - name: Cleanup before deployment
+        run: |
+          rm -rf .git .github node_modules var
+
       - name: Deploy to Server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -56,7 +60,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           tar_tmp_path: true
           rm: false
-          source: "!(.git|.github|node_modules|var|tests|phpunit.dist.xml)"
+          source: "."
           target: ${{ secrets.WORK_DIR }}
       - name: Run post-deployment commands
         uses: appleboy/ssh-action@master
