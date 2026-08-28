@@ -82,6 +82,8 @@ class AdminMembreControllerTest extends TestCase
             return $m instanceof Membre
                 && $m->getNom() === 'Rabe'
                 && $m->getPrenom() === 'Soa'
+                && $m->getDateNaissance()?->format('Y-m-d') === '1995-05-15'
+                && $m->getAge() !== null
                 && $m->getFiangonana() === $fiangonana
                 && $m->getZoneGeographique() === $groupe
                 && $m->getAssociations()->contains($association);
@@ -95,6 +97,7 @@ class AdminMembreControllerTest extends TestCase
             'nom' => 'Rabe',
             'prenom' => 'Soa',
             'email' => 'rabe.soa@example.com',
+            'dateNaissance' => '1995-05-15',
             'fiangonana_id' => 1,
             'groupe_id' => 2,
             'association_ids' => [3],

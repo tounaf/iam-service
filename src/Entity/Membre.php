@@ -192,6 +192,17 @@ class Membre implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    #[Groups(['membre:read'])]
+    public function getAge(): ?int
+    {
+        if ($this->dateNaissance === null) {
+            return null;
+        }
+
+        $now = new \DateTime();
+        return $this->dateNaissance->diff($now)->y;
+    }
+
     public function getPhotoUrl(): ?string
     {
         return $this->photoUrl;

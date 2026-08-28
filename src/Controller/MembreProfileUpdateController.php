@@ -55,6 +55,10 @@ class MembreProfileUpdateController extends AbstractController
         if (array_key_exists('adresse', $data)) {
             $membre->setAdresse(trim($data['adresse']) ?: null);
         }
+        if (array_key_exists('dateNaissance', $data)) {
+            $val = trim((string)$data['dateNaissance']);
+            $membre->setDateNaissance($val ? new \DateTime($val) : null);
+        }
 
         // Handle profile photo upload if present in multipart form
         $file = $request->files->get('photo');
@@ -86,6 +90,8 @@ class MembreProfileUpdateController extends AbstractController
                 'email' => $membre->getEmail(),
                 'telephone' => $membre->getTelephone(),
                 'adresse' => $membre->getAdresse(),
+                'dateNaissance' => $membre->getDateNaissance()?->format('Y-m-d'),
+                'age' => $membre->getAge(),
                 'photoUrl' => $membre->getPhotoUrl(),
             ]
         ]);

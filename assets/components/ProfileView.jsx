@@ -14,6 +14,7 @@ export function ProfileView({ member, onRefresh }) {
     email: '',
     telephone: '',
     adresse: '',
+    dateNaissance: '',
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -39,6 +40,7 @@ export function ProfileView({ member, onRefresh }) {
         email: member.email || '',
         telephone: member.telephone || '',
         adresse: member.adresse || '',
+        dateNaissance: member.dateNaissance ? member.dateNaissance.substring(0, 10) : '',
       });
       setPhotoPreview(member.photoUrl || null);
 
@@ -103,6 +105,7 @@ export function ProfileView({ member, onRefresh }) {
     data.append('email', formData.email);
     data.append('telephone', formData.telephone);
     data.append('adresse', formData.adresse);
+    data.append('dateNaissance', formData.dateNaissance);
     if (photoFile) {
       data.append('photo', photoFile);
     }
@@ -198,9 +201,16 @@ export function ProfileView({ member, onRefresh }) {
               )}
             </div>
             <div className="sm:mb-1">
-              <h1 className="text-2xl font-extrabold text-slate-800">
-                {member.prenom} {member.nom}
-              </h1>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-2xl font-extrabold text-slate-800">
+                  {member.prenom} {member.nom}
+                </h1>
+                {member.age !== null && member.age !== undefined && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    {member.age} ans
+                  </span>
+                )}
+              </div>
               <p className="text-xs font-semibold text-slate-500">
                 Membre #{member.id} • Inscrit {member.createdAt ? new Date(member.createdAt).toLocaleDateString('fr-FR') : 'N/A'}
               </p>
@@ -303,6 +313,16 @@ export function ProfileView({ member, onRefresh }) {
             </div>
 
             <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Date de Naissance</label>
+              <input
+                type="date"
+                value={formData.dateNaissance}
+                onChange={(e) => setFormData({ ...formData, dateNaissance: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700">Prénom</label>
               <input
                 type="text"
@@ -388,6 +408,13 @@ export function ProfileView({ member, onRefresh }) {
               <div className="flex justify-between py-2 border-b border-slate-100">
                 <span className="text-slate-400 font-medium">Adresse</span>
                 <span className="font-bold text-slate-700">{member.adresse || 'Non renseignée'}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-slate-100">
+                <span className="text-slate-400 font-medium">Date de Naissance / Âge</span>
+                <span className="font-bold text-slate-700">
+                  {member.dateNaissance ? new Date(member.dateNaissance).toLocaleDateString('fr-FR') : 'Non renseignée'}
+                  {member.age !== null && member.age !== undefined ? ` (${member.age} ans)` : ''}
+                </span>
               </div>
             </div>
           </div>

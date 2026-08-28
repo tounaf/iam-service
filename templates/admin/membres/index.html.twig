@@ -40,7 +40,12 @@
                                     #{{ m.id }}
                                 </span>
                                 <div>
-                                    <p class="font-bold text-slate-800">{{ m.prenom }} {{ m.nom }}</p>
+                                    <div class="flex items-center space-x-2">
+                                        <p class="font-bold text-slate-800">{{ m.prenom }} {{ m.nom }}</p>
+                                        {% if m.age is not null %}
+                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100">{{ m.age }} ans</span>
+                                        {% endif %}
+                                    </div>
                                     <p class="text-[11px] text-slate-400 font-mono">Token: {{ m.qrCodeToken|default('N/A') }}</p>
                                 </div>
                             </div>
