@@ -36,9 +36,29 @@ class AdminEvenementController extends AbstractController
         );
 
         $presentMembers = [];
+        $lateMembersCount = 0;
+        $eventStart = $evenement->getDateDebut();
+
         foreach ($presences as $p) {
             if ($p->getMembre()) {
-                $presentMembers[] = $p;
+                $isLate = false;
+                $delayMinutes = 0;
+
+                if ($eventStart && $p->getScannedAt()) {
+                    $startTs = $eventStart->getTimestamp();
+                    $scanTs = $p->getScannedAt()->getTimestamp();
+                    if ($scanTs > $startTs) {
+                        $isLate = true;
+                        $delayMinutes = (int) ceil(($scanTs - $startTs) / 60);
+                        $lateMembersCount++;
+                    }
+                }
+
+                $presentMembers[] = [
+                    'presence' => $p,
+                    'isLate' => $isLate,
+                    'delayMinutes' => $delayMinutes,
+                ];
             }
         }
         $presentCount = count($presentMembers);
@@ -64,14 +84,20 @@ class AdminEvenementController extends AbstractController
             ? round(($presentCount / $totalScopeMembers) * 100, 1)
             : 0;
 
+        $tauxRetard = $presentCount > 0
+            ? round(($lateMembersCount / $presentCount) * 100, 1)
+            : 0;
+
         return $this->render('admin/evenements/show.html.twig', [
             'current_route' => 'admin_evenement',
             'evenement' => $evenement,
             'presences' => $presentMembers,
             'presentCount' => $presentCount,
+            'lateMembersCount' => $lateMembersCount,
             'totalScopeMembers' => $totalScopeMembers,
             'scopeName' => $scopeName,
             'tauxParticipation' => $tauxParticipation,
+            'tauxRetard' => $tauxRetard,
         ]);
     }
 

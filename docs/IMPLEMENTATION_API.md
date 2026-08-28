@@ -146,7 +146,7 @@ Lorsqu'un membre présente sa carte lors d'un événement, d'une activité de gr
 *   `GET /api/presences` : Liste de toutes les présences.
 
 #### 4. Suivi et Taux de Participation Annuel
-*   `GET /api/membres/{id}/participation-stats` : Calcule le taux de participation annuel d'un membre (`?year=2026`), fournissant le nombre total d'activités, le nombre d'activités assistées, le pourcentage de participation et les journaux de présence.
+*   `GET /api/membres/{id}/participation-stats` : Calcule le taux de participation annuel d'un membre (`?year=2026`), fournissant le nombre total d'activités, le nombre d'activités assistées, le pourcentage de participation, le nombre et le taux de retards (`lateCount`, `lateRate`), ainsi que les journaux de présence enrichis de l'état de retard (`isLate`, `delayMinutes`).
 
 ---
 

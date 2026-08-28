@@ -68,11 +68,44 @@ class MembreParticipationController extends AbstractController
             ->getResult();
 
         $presenceDetails = [];
+        $lateCount = 0;
+
+        // Load events for this year to cross-reference event start times with scannedAt timestamps
+        $events = $this->entityManager->getRepository(\App\Entity\Evenement::class)->createQueryBuilder('e')
+            ->where('e.createdAt >= :startDate OR e.dateDebut >= :startDate')
+            ->setParameter('startDate', $startDate)
+            ->getQuery()
+            ->getResult();
+
+        $eventsMap = [];
+        foreach ($events as $evt) {
+            if ($evt->getNom()) {
+                $eventsMap[$evt->getNom()] = $evt;
+            }
+        }
+
         foreach ($presences as $p) {
+            $isLate = false;
+            $delayMinutes = 0;
+            $evt = $eventsMap[$p->getActivityName()] ?? null;
+
+            if ($evt && $evt->getDateDebut()) {
+                $startTs = $evt->getDateDebut()->getTimestamp();
+                $scanTs = $p->getScannedAt()->getTimestamp();
+
+                if ($scanTs > $startTs) {
+                    $isLate = true;
+                    $delayMinutes = (int) ceil(($scanTs - $startTs) / 60);
+                    $lateCount++;
+                }
+            }
+
             $presenceDetails[] = [
                 'id' => $p->getId(),
                 'activityName' => $p->getActivityName(),
                 'scannedAt' => $p->getScannedAt()->format(\DateTimeInterface::ATOM),
+                'isLate' => $isLate,
+                'delayMinutes' => $delayMinutes,
                 'scannedBy' => $p->getScannedBy() ? [
                     'id' => $p->getScannedBy()->getId(),
                     'nom' => $p->getScannedBy()->getNom(),
@@ -84,6 +117,7 @@ class MembreParticipationController extends AbstractController
         $totalActivitiesCount = count($allActivities);
         $attendedActivitiesCount = count($memberActivities);
         $participationRate = $totalActivitiesCount > 0 ? round(($attendedActivitiesCount / $totalActivitiesCount) * 100, 2) : 0.0;
+        $lateRate = $attendedActivitiesCount > 0 ? round(($lateCount / $attendedActivitiesCount) * 100, 2) : 0.0;
 
         return new JsonResponse([
             'membre' => [
@@ -96,6 +130,8 @@ class MembreParticipationController extends AbstractController
             'totalActivitiesCount' => $totalActivitiesCount,
             'attendedActivitiesCount' => $attendedActivitiesCount,
             'participationRate' => $participationRate,
+            'lateCount' => $lateCount,
+            'lateRate' => $lateRate,
             'allActivitiesInYear' => array_values($allActivities),
             'attendedActivitiesInYear' => array_values($memberActivities),
             'presenceLogs' => $presenceDetails
