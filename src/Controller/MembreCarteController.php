@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Membre;
+use App\Service\AttendanceStatsService;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,14 +16,13 @@ use Twig\Environment;
 
 class MembreCarteController extends AbstractController
 {
-    private Environment $twig;
-
-    public function __construct(Environment $twig)
-    {
-        $this->twig = $twig;
-    }
+    public function __construct(
+        private Environment $twig,
+        private ?AttendanceStatsService $attendanceStatsService = null
+    ) {}
 
     #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
+    #[Route('/api/membres/{id}/fiche', name: 'api_membre_fiche', methods: ['GET'])]
     public function __invoke(?Membre $membre, ?Request $request = null): Response
     {
         if (!$membre) {
@@ -73,8 +73,12 @@ class MembreCarteController extends AbstractController
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
 
-        if ($request === null) {
-            $request = Request::createFromGlobals();
+        // Calculate participation stats for current year or requested year
+        $yearParam = $request->query->get('year');
+        $year = $yearParam !== null ? (int)$yearParam : (int)date('Y');
+        $participationStats = null;
+        if ($this->attendanceStatsService !== null) {
+            $participationStats = $this->attendanceStatsService->getMemberStats($membre, $year);
         }
 
         $acceptHeader = $request->headers->get('Accept', '');
@@ -96,6 +100,7 @@ class MembreCarteController extends AbstractController
                 'qrCodeToken' => $token,
                 'qrCodeBase64' => $qrCodeBase64,
                 'scanUrl' => $scanUrl,
+                'participationStats' => $participationStats,
             ], Response::HTTP_OK, [
                 'Cache-Control' => 'public, max-age=3600'
             ]);
@@ -113,6 +118,7 @@ class MembreCarteController extends AbstractController
             'memberId' => $membre->getId(),
             'token' => $token,
             'scanUrl' => $scanUrl,
+            'participationStats' => $participationStats,
         ]);
 
         return new Response(
