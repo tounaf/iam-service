@@ -7,6 +7,7 @@ use App\Entity\Membre;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
 use App\Entity\Association;
+use App\Service\AttendanceStatsService;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -36,6 +37,14 @@ class MembreCarteControllerTest extends TestCase
         $member->method('getAssociations')->willReturn(new ArrayCollection());
         $member->method('getQrCodeToken')->willReturn('SECRET_TOKEN_123');
 
+        $statsService = $this->createMock(AttendanceStatsService::class);
+        $statsService->method('getMemberStats')->willReturn([
+            'year' => 2026,
+            'totalActivitiesCount' => 10,
+            'attendedActivitiesCount' => 8,
+            'participationRate' => 80.0
+        ]);
+
         $twig = $this->createMock(Environment::class);
         $twig->expects($this->once())
             ->method('render')
@@ -48,12 +57,14 @@ class MembreCarteControllerTest extends TestCase
                         && $args['groupeNom'] === 'Test Geographic Zone'
                         && $args['memberId'] === 42
                         && $args['token'] === 'SECRET_TOKEN_123'
-                        && str_contains($args['scanUrl'], '/membres/scan/SECRET_TOKEN_123');
+                        && str_contains($args['scanUrl'], '/membres/scan/SECRET_TOKEN_123')
+                        && isset($args['participationStats'])
+                        && $args['participationStats']['participationRate'] === 80.0;
                 })
             )
             ->willReturn('<html>Nirina Ratsimbazafy - Test Church - Test Geographic Zone</html>');
 
-        $controller = new MembreCarteController($twig);
+        $controller = new MembreCarteController($twig, $statsService);
         $response = $controller->__invoke($member);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -66,7 +77,7 @@ class MembreCarteControllerTest extends TestCase
         $this->assertStringContainsString('Test Geographic Zone', $content);
     }
 
-    public function testInvokeReturnsJsonResponseWhenJsonRequested(): void
+    public function testInvokeReturnsJsonResponseWhenJsonRequestedForFicheRoute(): void
     {
         $fiangonana = new Fiangonana();
         $fiangonana->setNom('Paroisse Central');
@@ -88,10 +99,20 @@ class MembreCarteControllerTest extends TestCase
         $member->method('getZoneGeographique')->willReturn($groupe);
         $member->method('getAssociations')->willReturn(new ArrayCollection([$assoc]));
 
-        $twig = $this->createMock(Environment::class);
-        $controller = new MembreCarteController($twig);
+        $statsService = $this->createMock(AttendanceStatsService::class);
+        $statsService->method('getMemberStats')->willReturn([
+            'year' => 2026,
+            'totalActivitiesCount' => 12,
+            'attendedActivitiesCount' => 9,
+            'participationRate' => 75.0,
+            'lateCount' => 1,
+            'onTimeCount' => 8
+        ]);
 
-        $request = Request::create('/api/membres/10/carte?format=json');
+        $twig = $this->createMock(Environment::class);
+        $controller = new MembreCarteController($twig, $statsService);
+
+        $request = Request::create('/api/membres/10/fiche?format=json');
         $response = $controller->__invoke($member, $request);
 
         $this->assertInstanceOf(JsonResponse::class, $response);
@@ -108,6 +129,8 @@ class MembreCarteControllerTest extends TestCase
         $this->assertEquals(['Jeunesse KT'], $data['associations']);
         $this->assertEquals('token-123-abc', $data['qrCodeToken']);
         $this->assertNotEmpty($data['qrCodeBase64']);
+        $this->assertArrayHasKey('participationStats', $data);
+        $this->assertEquals(75.0, $data['participationStats']['participationRate']);
     }
 
     public function testInvokeReturnsJsonResponseWithCompleteMemberDetails(): void

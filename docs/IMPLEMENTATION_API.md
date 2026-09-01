@@ -122,10 +122,10 @@ Toutes les APIs sont préfixées par `/api` et supportent les formats `json`, `j
 
 Chaque membre possède un identifiant de QR code unique (`qrCodeToken`) généré automatiquement sous forme de jeton sécurisé lors de son inscription.
 
-#### 1. Carte de Membre Officielle
-*   `GET /api/membres/{id}/carte` : Génère la fiche/carte de membre officielle.
-    *   *Rendu HTML par défaut* : Rendu Twig/Tailwind CSS responsive prêt pour impression avec image QR Code base64 encodée.
-    *   *Format JSON* : Accessible via `?format=json` ou header `Accept: application/json`. Retourne les informations du membre, les affiliations, l'URL de scan (`/membres/scan/{token}`) et le lien vers les statistiques de participation.
+#### 1. Carte & Fiche de Membre Officielle
+*   `GET /api/membres/{id}/carte` ou `GET /api/membres/{id}/fiche` : Génère la fiche/carte de membre officielle avec QR code et résumé de la participation annuelle.
+    *   *Rendu HTML par défaut* : Rendu Twig/Tailwind CSS responsive prêt pour impression avec image QR Code base64 encodée et résumé du taux de participation.
+    *   *Format JSON* : Accessible via `?format=json` ou header `Accept: application/json`. Retourne les informations du membre, les affiliations, l'URL de scan (`/membres/scan/{token}`), le code QR base64 et l'objet `participationStats` (taux de participation, nombre total d'activités, présences).
 
 #### 2. Génération de l'image du QR Code
 *   `GET /api/membres/{id}/qr-code` : Génère et retourne l'image PNG binaire haute définition (300x300 px) du QR Code unique du membre. Le QR Code encode par défaut l'URL du service de pointage de présence (`/membres/scan/{token}`).
