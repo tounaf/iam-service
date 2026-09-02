@@ -66,6 +66,38 @@ class MembreCarteControllerTest extends TestCase
         $this->assertStringContainsString('Test Geographic Zone', $content);
     }
 
+    public function testInvokeReturnsHtmlResponseForFicheRoute(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse St Paul');
+
+        $groupe = new Groupe();
+        $groupe->setNom('Zone Nord');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(20);
+        $member->method('getNom')->willReturn('Rabe');
+        $member->method('getPrenom')->willReturn('Jean');
+        $member->method('getEmail')->willReturn('jean@example.com');
+        $member->method('getTelephone')->willReturn('+261330000000');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getZoneGeographique')->willReturn($groupe);
+        $member->method('getAssociations')->willReturn(new ArrayCollection());
+        $member->method('getQrCodeToken')->willReturn('SECRET_TOKEN_FICHE');
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->willReturn('<html>Jean Rabe - Paroisse St Paul</html>');
+
+        $controller = new MembreCarteController($twig);
+        $request = Request::create('/api/membres/20/fiche');
+        $response = $controller->__invoke($member, $request);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+    }
+
     public function testInvokeReturnsJsonResponseWhenJsonRequested(): void
     {
         $fiangonana = new Fiangonana();
