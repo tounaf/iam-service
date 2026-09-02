@@ -23,6 +23,7 @@ class MembreCarteController extends AbstractController
     }
 
     #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
+    #[Route('/api/membres/{id}/fiche', name: 'api_membre_fiche', methods: ['GET'])]
     public function __invoke(?Membre $membre, ?Request $request = null): Response
     {
         if (!$membre) {
