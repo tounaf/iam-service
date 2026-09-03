@@ -23,6 +23,7 @@ class MembreCarteController extends AbstractController
     }
 
     #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
+    #[Route('/api/membres/{id}/fiche', name: 'api_membre_fiche', methods: ['GET'])]
     public function __invoke(?Membre $membre, ?Request $request = null): Response
     {
         if (!$membre) {
@@ -72,6 +73,7 @@ class MembreCarteController extends AbstractController
         $prenom = $membre->getPrenom() ?? '';
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
+        $photoUrl = $membre->getPhotoUrl();
 
         if ($request === null) {
             $request = Request::createFromGlobals();
@@ -88,6 +90,7 @@ class MembreCarteController extends AbstractController
                 'prenom' => $prenom,
                 'email' => $email,
                 'telephone' => $telephone,
+                'photoUrl' => $photoUrl,
                 'fiangonanaNom' => $fiangonanaNom,
                 'groupeNom' => $groupeNom,
                 'associations' => $associationsList,
@@ -106,6 +109,7 @@ class MembreCarteController extends AbstractController
             'prenom' => $prenom,
             'email' => $email,
             'telephone' => $telephone,
+            'photoUrl' => $photoUrl,
             'fiangonanaNom' => $fiangonanaNom,
             'groupeNom' => $groupeNom,
             'associationsStr' => $associationsStr,
