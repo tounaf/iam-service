@@ -154,6 +154,46 @@ class MembreCarteControllerTest extends TestCase
         $this->assertNotEmpty($data['qrCodeBase64']);
     }
 
+    public function testInvokeWorksForFicheRouteInHtmlAndJson(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Fiangonana Ambohibao');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(20);
+        $member->method('getNom')->willReturn('Andria');
+        $member->method('getPrenom')->willReturn('Soa');
+        $member->method('getEmail')->willReturn('soa@example.com');
+        $member->method('getTelephone')->willReturn('+261330000000');
+        $member->method('getQrCodeToken')->willReturn('token-fiche-999');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getAssociations')->willReturn(new ArrayCollection());
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->with('membre/carte.html.twig', $this->anything())
+            ->willReturn('<html>Fiche Membre - Soa Andria</html>');
+
+        $controller = new MembreCarteController($twig);
+
+        // Test HTML response via /api/membres/20/fiche
+        $htmlRequest = Request::create('/api/membres/20/fiche');
+        $htmlResponse = $controller->__invoke($member, $htmlRequest);
+        $this->assertEquals(Response::HTTP_OK, $htmlResponse->getStatusCode());
+        $this->assertStringContainsString('Fiche Membre - Soa Andria', $htmlResponse->getContent());
+
+        // Test JSON response via /api/membres/20/fiche?format=json
+        $jsonRequest = Request::create('/api/membres/20/fiche?format=json');
+        $jsonResponse = $controller->__invoke($member, $jsonRequest);
+        $this->assertInstanceOf(JsonResponse::class, $jsonResponse);
+        $this->assertEquals(Response::HTTP_OK, $jsonResponse->getStatusCode());
+        $data = json_decode($jsonResponse->getContent(), true);
+        $this->assertEquals(20, $data['id']);
+        $this->assertEquals('Andria', $data['nom']);
+        $this->assertEquals('token-fiche-999', $data['qrCodeToken']);
+    }
+
     public function testInvokeThrowsNotFoundForNullMember(): void
     {
         $this->expectException(NotFoundHttpException::class);
