@@ -154,6 +154,45 @@ class MembreCarteControllerTest extends TestCase
         $this->assertNotEmpty($data['qrCodeBase64']);
     }
 
+    public function testInvokeFicheRouteReturnsValidMemberFicheDetails(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse Sud');
+
+        $groupe = new Groupe();
+        $groupe->setNom('Zone Atsimondrano');
+
+        $assoc = new Association();
+        $assoc->setNom('KTLM');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(99);
+        $member->method('getNom')->willReturn('Rabe');
+        $member->method('getPrenom')->willReturn('Soa');
+        $member->method('getEmail')->willReturn('soa@example.com');
+        $member->method('getTelephone')->willReturn('+261330000000');
+        $member->method('getQrCodeToken')->willReturn('token-fiche-99');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getZoneGeographique')->willReturn($groupe);
+        $member->method('getAssociations')->willReturn(new ArrayCollection([$assoc]));
+
+        $twig = $this->createMock(Environment::class);
+        $controller = new MembreCarteController($twig);
+
+        $request = Request::create('/api/membres/99/fiche?format=json');
+        $response = $controller->__invoke($member, $request);
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertEquals(99, $data['id']);
+        $this->assertEquals('Rabe', $data['nom']);
+        $this->assertEquals('Soa', $data['prenom']);
+        $this->assertEquals('Paroisse Sud', $data['fiangonanaNom']);
+        $this->assertEquals('token-fiche-99', $data['qrCodeToken']);
+    }
+
     public function testInvokeThrowsNotFoundForNullMember(): void
     {
         $this->expectException(NotFoundHttpException::class);
