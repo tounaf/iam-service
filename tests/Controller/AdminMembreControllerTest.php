@@ -49,6 +49,69 @@ class AdminMembreControllerTest extends TestCase
         return $container;
     }
 
+    public function testIndexWithSearchAndPagination(): void
+    {
+        $em = $this->createMock(EntityManagerInterface::class);
+        $membreRepo = $this->createMock(\App\Repository\MembreRepository::class);
+        $fiangonanaRepo = $this->createMock(EntityRepository::class);
+        $groupeRepo = $this->createMock(EntityRepository::class);
+        $assocRepo = $this->createMock(EntityRepository::class);
+
+        $paginator = $this->createMock(\Doctrine\ORM\Tools\Pagination\Paginator::class);
+        $paginator->method('count')->willReturn(100);
+
+        $membreRepo->expects($this->once())
+            ->method('findBySearchAndPaginate')
+            ->with('Rabe', 1, 2, 3, 1, 50)
+            ->willReturn($paginator);
+
+        $fiangonanaRepo->method('findAll')->willReturn([]);
+        $groupeRepo->method('findAll')->willReturn([]);
+        $assocRepo->method('findAll')->willReturn([]);
+
+        $em->method('getRepository')->willReturnCallback(function ($entityClass) use ($membreRepo, $fiangonanaRepo, $groupeRepo, $assocRepo) {
+            return match ($entityClass) {
+                Membre::class => $membreRepo,
+                Fiangonana::class => $fiangonanaRepo,
+                Groupe::class => $groupeRepo,
+                Association::class => $assocRepo,
+                default => null,
+            };
+        });
+
+        $controller = new class extends AdminMembreController {
+            public function render(string $view, array $parameters = [], ?\Symfony\Component\HttpFoundation\Response $response = null): \Symfony\Component\HttpFoundation\Response {
+                return new \Symfony\Component\HttpFoundation\Response(json_encode([
+                    'view' => $view,
+                    'totalItems' => $parameters['totalItems'],
+                    'page' => $parameters['page'],
+                    'totalPages' => $parameters['totalPages'],
+                    'filters' => $parameters['filters'],
+                ]));
+            }
+        };
+
+        $request = Request::create('/admin/membres', 'GET', [
+            'search' => 'Rabe',
+            'fiangonana' => '1',
+            'groupe' => '2',
+            'association' => '3',
+            'page' => '1',
+        ]);
+
+        $response = $controller->index($request, $em);
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertEquals('admin/membres/index.html.twig', $data['view']);
+        $this->assertEquals(100, $data['totalItems']);
+        $this->assertEquals(2, $data['totalPages']);
+        $this->assertEquals('Rabe', $data['filters']['search']);
+        $this->assertEquals(1, $data['filters']['fiangonana']);
+        $this->assertEquals(2, $data['filters']['groupe']);
+        $this->assertEquals(3, $data['filters']['association']);
+    }
+
     public function testNewMembreWithDirectAssociation(): void
     {
         $fiangonana = new Fiangonana();

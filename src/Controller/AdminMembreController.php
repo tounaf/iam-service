@@ -19,13 +19,49 @@ use Symfony\Component\Routing\Annotation\Route;
 class AdminMembreController extends AbstractController
 {
     #[Route('/admin/membres', name: 'admin_membre_index', methods: ['GET'])]
-    public function index(EntityManagerInterface $em): Response
+    public function index(Request $request, EntityManagerInterface $em): Response
     {
-        $membres = $em->getRepository(Membre::class)->findBy([], ['id' => 'DESC']);
+        $search = trim((string) $request->query->get('search', ''));
+        $fiangonanaId = $request->query->get('fiangonana') ? (int) $request->query->get('fiangonana') : null;
+        $groupeId = $request->query->get('groupe') ? (int) $request->query->get('groupe') : null;
+        $associationId = $request->query->get('association') ? (int) $request->query->get('association') : null;
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = 50;
+
+        /** @var \App\Repository\MembreRepository $membreRepo */
+        $membreRepo = $em->getRepository(Membre::class);
+        $paginator = $membreRepo->findBySearchAndPaginate(
+            $search !== '' ? $search : null,
+            $fiangonanaId,
+            $groupeId,
+            $associationId,
+            $page,
+            $limit
+        );
+
+        $totalItems = count($paginator);
+        $totalPages = max(1, (int) ceil($totalItems / $limit));
+
+        $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
+        $groupes = $em->getRepository(Groupe::class)->findAll();
+        $associations = $em->getRepository(Association::class)->findAll();
 
         return $this->render('admin/membres/index.html.twig', [
             'current_route' => 'admin_membre',
-            'membres' => $membres,
+            'membres' => $paginator,
+            'totalItems' => $totalItems,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'limit' => $limit,
+            'fiangonanas' => $fiangonanas,
+            'groupes' => $groupes,
+            'associations' => $associations,
+            'filters' => [
+                'search' => $search,
+                'fiangonana' => $fiangonanaId,
+                'groupe' => $groupeId,
+                'association' => $associationId,
+            ],
         ]);
     }
 
