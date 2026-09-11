@@ -106,9 +106,35 @@ class AdminAssociationController extends AbstractController
         }
 
         $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
+        $groupes = $em->getRepository(\App\Entity\Groupe::class)->findAll();
+        $associations = $em->getRepository(Association::class)->findAll();
 
-        // Fetch members belonging to this association
-        $membres = $association->getMembres();
+        // Filters for membres tab
+        $search = trim((string) $request->query->get('search', ''));
+        $fiangonanaFilter = $request->query->get('fiangonana') ? (int) $request->query->get('fiangonana') : null;
+        $groupeFilter = $request->query->get('groupe') ? (int) $request->query->get('groupe') : null;
+        $assocFilter = $request->query->get('association') !== null && $request->query->get('association') !== ''
+            ? (int) $request->query->get('association')
+            : $association->getId();
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = 50;
+
+        /** @var \App\Repository\MembreRepository $membreRepo */
+        $membreRepo = $em->getRepository(\App\Entity\Membre::class);
+        $paginator = $membreRepo->findBySearchAndPaginate(
+            $search !== '' ? $search : null,
+            $fiangonanaFilter,
+            $groupeFilter,
+            $assocFilter,
+            $page,
+            $limit
+        );
+
+        $totalMembresItems = count($paginator);
+        $totalMembresPages = max(1, (int) ceil($totalMembresItems / $limit));
+
+        // Total members registered in this association
+        $totalMembersInAssociation = count($association->getMembres());
 
         // Fetch committee/bureau roles in association context
         $roleAssignments = $em->getRepository(RoleAssignment::class)->findBy(['associationContext' => $association, 'isActive' => true]);
@@ -118,7 +144,7 @@ class AdminAssociationController extends AbstractController
         $typesEvenement = $em->getRepository(TypeEvenement::class)->findAll();
 
         // Fetch events and presences for members belonging to this association
-        $memberIds = array_map(fn($m) => $m->getId(), $membres->toArray());
+        $memberIds = array_map(fn($m) => $m->getId(), $association->getMembres()->toArray());
         $presences = [];
         if (!empty($memberIds)) {
             $presences = $em->getRepository(Presence::class)->createQueryBuilder('p')
@@ -142,12 +168,31 @@ class AdminAssociationController extends AbstractController
             $events[$act]['presences'][] = $p;
         }
 
+        $activeTab = $request->query->get('tab', 'general');
+        if ($search !== '' || $request->query->has('fiangonana') || $request->query->has('groupe') || $request->query->has('page') || ($request->query->has('association') && (int)$request->query->get('association') !== $association->getId())) {
+            $activeTab = 'membres';
+        }
+
         return $this->render('admin/associations/form.html.twig', [
             'current_route' => 'admin_association',
             'isEdit' => true,
             'association' => $association,
             'fiangonanas' => $fiangonanas,
-            'membres' => $membres,
+            'groupes' => $groupes,
+            'associations' => $associations,
+            'membres' => $paginator,
+            'totalMembersInAssociation' => $totalMembersInAssociation,
+            'totalMembresItems' => $totalMembresItems,
+            'membresPage' => $page,
+            'totalMembresPages' => $totalMembresPages,
+            'limit' => $limit,
+            'filters' => [
+                'search' => $search,
+                'fiangonana' => $fiangonanaFilter,
+                'groupe' => $groupeFilter,
+                'association' => $assocFilter,
+            ],
+            'activeTab' => $activeTab,
             'roleAssignments' => $roleAssignments,
             'evenements' => $evenements,
             'typesEvenement' => $typesEvenement,
