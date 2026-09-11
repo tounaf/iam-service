@@ -154,6 +154,42 @@ class MembreCarteControllerTest extends TestCase
         $this->assertNotEmpty($data['qrCodeBase64']);
     }
 
+    public function testInvokeHandlesFicheEndpointForJsonAndHtml(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Eglise Test');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(20);
+        $member->method('getNom')->willReturn('Andria');
+        $member->method('getPrenom')->willReturn('Soa');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getAssociations')->willReturn(new ArrayCollection());
+        $member->method('getQrCodeToken')->willReturn('token-fiche-999');
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->willReturn('<html>Fiche Membre</html>');
+
+        $controller = new MembreCarteController($twig);
+
+        // Test HTML for /api/membres/20/fiche
+        $reqHtml = Request::create('/api/membres/20/fiche');
+        $resHtml = $controller->__invoke($member, $reqHtml);
+        $this->assertEquals(Response::HTTP_OK, $resHtml->getStatusCode());
+        $this->assertEquals('text/html; charset=utf-8', $resHtml->headers->get('Content-Type'));
+
+        // Test JSON for /api/membres/20/fiche?format=json
+        $reqJson = Request::create('/api/membres/20/fiche?format=json');
+        $resJson = $controller->__invoke($member, $reqJson);
+        $this->assertInstanceOf(JsonResponse::class, $resJson);
+        $this->assertEquals(Response::HTTP_OK, $resJson->getStatusCode());
+        $data = json_decode($resJson->getContent(), true);
+        $this->assertEquals(20, $data['id']);
+        $this->assertEquals('token-fiche-999', $data['qrCodeToken']);
+    }
+
     public function testInvokeThrowsNotFoundForNullMember(): void
     {
         $this->expectException(NotFoundHttpException::class);
