@@ -7,6 +7,7 @@ use App\Entity\Membre;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
 use App\Entity\Association;
+use App\Service\AttendanceStatsService;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -151,6 +152,100 @@ class MembreCarteControllerTest extends TestCase
         $this->assertArrayHasKey('associationsArray', $data);
         $this->assertEquals('Sampana Tanora', $data['associationsStr']);
         $this->assertStringContainsString('/membres/scan/token-koto-888', $data['scanUrl']);
+        $this->assertNotEmpty($data['qrCodeBase64']);
+    }
+
+    public function testFicheReturnsHtmlResponseForValidMember(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse Ambohitra');
+
+        $groupe = new Groupe();
+        $groupe->setNom('Zone Nord');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(20);
+        $member->method('getNom')->willReturn('Andria');
+        $member->method('getPrenom')->willReturn('Soa');
+        $member->method('getEmail')->willReturn('soa@example.com');
+        $member->method('getTelephone')->willReturn('+261330000000');
+        $member->method('getAdresse')->willReturn('Lot 123 Antananarivo');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getZoneGeographique')->willReturn($groupe);
+        $member->method('getAssociations')->willReturn(new ArrayCollection());
+        $member->method('getQrCodeToken')->willReturn('TOKEN_FICHE_20');
+
+        $statsService = $this->createMock(AttendanceStatsService::class);
+        $statsService->method('getMemberStats')->willReturn([
+            'year' => 2025,
+            'totalActivitiesCount' => 10,
+            'attendedActivitiesCount' => 8,
+            'participationRate' => 80.0,
+        ]);
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->with(
+                'membre/fiche.html.twig',
+                $this->callback(function ($args) {
+                    return $args['nom'] === 'Andria'
+                        && $args['prenom'] === 'Soa'
+                        && $args['fiangonanaNom'] === 'Paroisse Ambohitra'
+                        && $args['groupeNom'] === 'Zone Nord'
+                        && $args['memberId'] === 20
+                        && $args['stats']['participationRate'] === 80.0;
+                })
+            )
+            ->willReturn('<html>Fiche Soa Andria</html>');
+
+        $controller = new MembreCarteController($twig, $statsService);
+        $response = $controller->fiche($member);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertStringContainsString('Fiche Soa Andria', $response->getContent());
+    }
+
+    public function testFicheReturnsJsonResponseWhenJsonRequested(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse Mahajanga');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(25);
+        $member->method('getNom')->willReturn('Rabe');
+        $member->method('getPrenom')->willReturn('Jean');
+        $member->method('getEmail')->willReturn('jean@example.com');
+        $member->method('getTelephone')->willReturn('+261340000000');
+        $member->method('getAdresse')->willReturn('Mahajanga Center');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getAssociations')->willReturn(new ArrayCollection());
+        $member->method('getQrCodeToken')->willReturn('TOKEN_JEAN_25');
+
+        $statsService = $this->createMock(AttendanceStatsService::class);
+        $statsService->method('getMemberStats')->willReturn([
+            'year' => 2025,
+            'totalActivitiesCount' => 5,
+            'attendedActivitiesCount' => 5,
+            'participationRate' => 100.0,
+        ]);
+
+        $twig = $this->createMock(Environment::class);
+        $controller = new MembreCarteController($twig, $statsService);
+
+        $request = Request::create('/api/membres/25/fiche?format=json');
+        $response = $controller->fiche($member, $request);
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertEquals(25, $data['id']);
+        $this->assertEquals('Rabe', $data['nom']);
+        $this->assertEquals('Jean', $data['prenom']);
+        $this->assertEquals('Mahajanga Center', $data['adresse']);
+        $this->assertEquals(100.0, $data['stats']['participationRate']);
         $this->assertNotEmpty($data['qrCodeBase64']);
     }
 
