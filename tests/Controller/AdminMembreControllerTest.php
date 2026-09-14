@@ -229,4 +229,41 @@ class AdminMembreControllerTest extends TestCase
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
     }
+
+    public function testDeleteMembre(): void
+    {
+        $membre = new Membre();
+        $membre->setNom('Rakoto');
+        $membre->setPrenom('Paul');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
+        $query = $this->createMock(\Doctrine\ORM\AbstractQuery::class);
+
+        $membreRepo->method('find')->with(15)->willReturn($membre);
+        $em->method('getRepository')->with(Membre::class)->willReturn($membreRepo);
+
+        $em->expects($this->exactly(3))
+            ->method('createQuery')
+            ->willReturn($query);
+
+        $query->expects($this->exactly(3))
+            ->method('setParameter')
+            ->with('m', $membre)
+            ->willReturnSelf();
+
+        $query->expects($this->exactly(3))
+            ->method('execute');
+
+        $em->expects($this->once())->method('remove')->with($membre);
+        $em->expects($this->once())->method('flush');
+
+        $controller = new AdminMembreController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/membres/15/supprimer', 'POST');
+        $response = $controller->delete(15, $request, $em);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+    }
 }
