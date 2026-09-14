@@ -132,6 +132,12 @@
                             <a href="/admin/membres/{{ m.id }}/editer" title="Éditer Membre" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </a>
+                            <!-- Supprimer -->
+                            <form method="POST" action="/admin/membres/{{ m.id }}/supprimer" class="inline-block" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer {{ m.prenom|escape('js') }} {{ m.nom|escape('js') }} ? Cette action est irréversible.');">
+                                <button type="submit" title="Supprimer le Membre" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 {% else %}

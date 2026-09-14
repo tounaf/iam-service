@@ -412,6 +412,38 @@ class AdminMembreController extends AbstractController
         return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
     }
 
+    #[Route('/admin/membres/{id}/supprimer', name: 'admin_membre_delete', methods: ['POST'])]
+    public function delete(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $membre = $em->getRepository(Membre::class)->find($id);
+        if (!$membre) {
+            throw new NotFoundHttpException('Membre introuvable.');
+        }
+
+        $nom = $membre->getNom();
+        $prenom = $membre->getPrenom();
+
+        // Safely update dependent entities where this member is referenced as scannedBy or enregistrePar
+        $em->createQuery('UPDATE App\Entity\Presence p SET p.scannedBy = NULL WHERE p.scannedBy = :m')
+            ->setParameter('m', $membre)
+            ->execute();
+
+        $em->createQuery('UPDATE App\Entity\Cotisation c SET c.enregistrePar = NULL WHERE c.enregistrePar = :m')
+            ->setParameter('m', $membre)
+            ->execute();
+
+        $em->createQuery('UPDATE App\Entity\Don d SET d.enregistrePar = NULL WHERE d.enregistrePar = :m')
+            ->setParameter('m', $membre)
+            ->execute();
+
+        $em->remove($membre);
+        $em->flush();
+
+        $this->addFlash('success', sprintf('Membre %s %s supprimé avec succès !', $prenom, $nom));
+
+        return $this->redirectToRoute('admin_membre_index');
+    }
+
     #[Route('/admin/role-assignments/{id}/delete', name: 'admin_role_assignment_delete', methods: ['POST'])]
     public function deleteRoleAssignment(int $id, EntityManagerInterface $em): Response
     {
