@@ -135,6 +135,78 @@ class AdminEntitiesControllerTest extends TestCase
         $this->assertCount(1, $fiangonana->getAssociations());
     }
 
+    public function testAssociationEditRendersMembresWithFiltersAndPagination(): void
+    {
+        $association = new class extends Association {
+            public function getId(): ?int { return 5; }
+        };
+        $association->setNom('KTM');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $associationRepo = $this->createMock(EntityRepository::class);
+        $membreRepo = $this->createMock(\App\Repository\MembreRepository::class);
+        $fiangonanaRepo = $this->createMock(EntityRepository::class);
+        $groupeRepo = $this->createMock(EntityRepository::class);
+        $roleAssignmentRepo = $this->createMock(EntityRepository::class);
+        $evenementRepo = $this->createMock(EntityRepository::class);
+        $typeEvenementRepo = $this->createMock(EntityRepository::class);
+
+        $associationRepo->method('find')->with(5)->willReturn($association);
+        $fiangonanaRepo->method('findAll')->willReturn([]);
+        $groupeRepo->method('findAll')->willReturn([]);
+        $associationRepo->method('findAll')->willReturn([$association]);
+        $roleAssignmentRepo->method('findBy')->willReturn([]);
+        $evenementRepo->method('findBy')->willReturn([]);
+        $typeEvenementRepo->method('findAll')->willReturn([]);
+
+        $paginator = $this->createMock(\Doctrine\ORM\Tools\Pagination\Paginator::class);
+        $paginator->method('count')->willReturn(25);
+
+        $membreRepo->expects($this->once())
+            ->method('findBySearchAndPaginate')
+            ->with('Rabe', null, null, 5, 1, 50)
+            ->willReturn($paginator);
+
+        $em->method('getRepository')->willReturnCallback(function ($entityClass) use ($associationRepo, $membreRepo, $fiangonanaRepo, $groupeRepo, $roleAssignmentRepo, $evenementRepo, $typeEvenementRepo) {
+            return match ($entityClass) {
+                Association::class => $associationRepo,
+                Membre::class => $membreRepo,
+                Fiangonana::class => $fiangonanaRepo,
+                Groupe::class => $groupeRepo,
+                RoleAssignment::class => $roleAssignmentRepo,
+                Evenement::class => $evenementRepo,
+                TypeEvenement::class => $typeEvenementRepo,
+                default => null,
+            };
+        });
+
+        $controller = new class extends AdminAssociationController {
+            public function render(string $view, array $parameters = [], ?Response $response = null): Response {
+                return new Response(json_encode([
+                    'view' => $view,
+                    'activeTab' => $parameters['activeTab'],
+                    'filters' => $parameters['filters'],
+                    'totalMembresItems' => $parameters['totalMembresItems'],
+                ]));
+            }
+        };
+
+        $request = Request::create('/admin/associations/5/editer', 'GET', [
+            'search' => 'Rabe',
+            'tab' => 'membres',
+        ]);
+
+        $response = $controller->edit(5, $request, $em);
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertEquals('admin/associations/form.html.twig', $data['view']);
+        $this->assertEquals('membres', $data['activeTab']);
+        $this->assertEquals('Rabe', $data['filters']['search']);
+        $this->assertEquals(5, $data['filters']['association']);
+        $this->assertEquals(25, $data['totalMembresItems']);
+    }
+
     public function testFiangonanaAddEvenementWithTypeAndDates(): void
     {
         $fiangonana = new Fiangonana();

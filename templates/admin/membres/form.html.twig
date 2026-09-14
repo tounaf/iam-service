@@ -355,57 +355,90 @@
 
         <!-- TAB 4: Cotisations & Dons -->
         <div id="tab-finances" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-8">
-            <!-- Suivi Annuel des Cotisations Mensuelles (4 Tranches) -->
+            <!-- Suivi Annuel des Cotisations Mensuelles (Par Entité) -->
             <div class="space-y-4">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                     <div>
                         <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Suivi des Cotisations Mensuelles (Année {{ year }})</h4>
-                        <p class="text-xs text-slate-500">Cotisations payables par mois (jusqu'à 4 tranches par mois)</p>
-                    </div>
-                    <div class="flex items-center space-x-3 text-xs font-bold">
-                        <span class="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">{{ monthsPaidCount }}/12 mois réglés</span>
-                        <span class="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200">Total: {{ totalCotisationsYear|number_format(2, ',', ' ') }} Ar</span>
+                        <p class="text-xs text-slate-500">Gestion séparée des cotisations par Paroisse, Groupe et Association (jusqu'à 4 tranches par mois)</p>
                     </div>
                 </div>
 
-                <!-- Months Matrix Table -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-slate-600">
-                        <thead class="bg-slate-50 font-semibold uppercase text-slate-400 border-b border-slate-200">
-                            <tr>
-                                <th class="py-2.5 px-3">Mois</th>
-                                <th class="py-2.5 px-3 text-center">Tranche 1 (1/4)</th>
-                                <th class="py-2.5 px-3 text-center">Tranche 2 (2/4)</th>
-                                <th class="py-2.5 px-3 text-center">Tranche 3 (3/4)</th>
-                                <th class="py-2.5 px-3 text-center">Tranche 4 (4/4)</th>
-                                <th class="py-2.5 px-3 text-right">Total Mois</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 font-mono">
-                            {% set moisNoms = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
-                            {% for mIdx, mData in monthsMatrix %}
-                                <tr class="hover:bg-slate-50 transition">
-                                    <td class="py-3 px-3 font-sans font-bold text-slate-800">{{ moisNoms[mIdx] }}</td>
-                                    {% for tIdx in 1..4 %}
-                                        {% set item = mData.tranches[tIdx] %}
-                                        <td class="py-3 px-3 text-center">
-                                            {% if item %}
-                                                <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 block" title="{{ item.paidAt | date('d/m/Y') }}">
-                                                    {{ item.montant|number_format(0, ',', ' ') }} Ar
-                                                </span>
-                                            {% else %}
-                                                <span class="text-slate-300 italic">-</span>
-                                            {% endif %}
-                                        </td>
+                {% set moisNoms = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+
+                <!-- Context Switcher Selector -->
+                {% if cotisationMatrices|length > 1 %}
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-100 p-2 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-500 uppercase px-2">Sélectionner l'Entité :</span>
+                        {% for ctxKey, cData in cotisationMatrices %}
+                            <button type="button" onclick="switchCotisationContext('{{ ctxKey }}')" id="btn-cotisation-{{ ctxKey }}" class="cotisation-ctx-btn px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 {{ loop.first ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-200' }}">
+                                {% if cData.context.type == 'fiangonana' %}
+                                    <i class="fa-solid fa-church text-[11px]"></i>
+                                {% elseif cData.context.type == 'groupe' %}
+                                    <i class="fa-solid fa-layer-group text-[11px]"></i>
+                                {% elseif cData.context.type == 'association' %}
+                                    <i class="fa-solid fa-people-group text-[11px]"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-coins text-[11px]"></i>
+                                {% endif %}
+                                <span>{{ cData.context.label }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Matrices Views -->
+                {% for ctxKey, cData in cotisationMatrices %}
+                    <div id="cotisation-matrix-{{ ctxKey }}" data-ctx-value="{{ cData.context.type }}:{{ cData.context.id }}" class="cotisation-matrix-view {{ not loop.first ? 'hidden' : '' }} space-y-3">
+                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-xs font-bold text-slate-800">
+                                Cotisations : <span class="text-indigo-600 font-extrabold">{{ cData.context.label }}</span>
+                            </span>
+                            <div class="flex items-center space-x-3 text-xs font-bold">
+                                <span class="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">{{ cData.monthsPaidCount }}/12 mois réglés</span>
+                                <span class="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200">Total: {{ cData.totalCotisationsYear|number_format(2, ',', ' ') }} Ar</span>
+                            </div>
+                        </div>
+
+                        <!-- Months Matrix Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-600">
+                                <thead class="bg-slate-50 font-semibold uppercase text-slate-400 border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Mois</th>
+                                        <th class="py-2.5 px-3 text-center">Tranche 1 (1/4)</th>
+                                        <th class="py-2.5 px-3 text-center">Tranche 2 (2/4)</th>
+                                        <th class="py-2.5 px-3 text-center">Tranche 3 (3/4)</th>
+                                        <th class="py-2.5 px-3 text-center">Tranche 4 (4/4)</th>
+                                        <th class="py-2.5 px-3 text-right">Total Mois</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 font-mono">
+                                    {% for mIdx, mData in cData.monthsMatrix %}
+                                        <tr class="hover:bg-slate-50 transition">
+                                            <td class="py-3 px-3 font-sans font-bold text-slate-800">{{ moisNoms[mIdx] }}</td>
+                                            {% for tIdx in 1..4 %}
+                                                {% set item = mData.tranches[tIdx] %}
+                                                <td class="py-3 px-3 text-center">
+                                                    {% if item %}
+                                                        <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 block" title="{{ item.paidAt | date('d/m/Y') }}">
+                                                            {{ item.montant|number_format(0, ',', ' ') }} Ar
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-slate-300 italic">-</span>
+                                                    {% endif %}
+                                                </td>
+                                            {% endfor %}
+                                            <td class="py-3 px-3 text-right font-bold text-indigo-700">
+                                                {{ mData.totalPaid|number_format(0, ',', ' ') }} Ar
+                                            </td>
+                                        </tr>
                                     {% endfor %}
-                                    <td class="py-3 px-3 text-right font-bold text-indigo-700">
-                                        {{ mData.totalPaid|number_format(0, ',', ' ') }} Ar
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endfor %}
 
                 <!-- Form Saisie Manuelle Cotisation -->
                 <form method="POST" action="/admin/membres/{{ membre.id }}/add-cotisation" class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
@@ -435,11 +468,15 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Entité Bénéficiaire *</label>
-                            <select name="context_type" required class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
-                                <option value="fiangonana">Paroisse / Église</option>
-                                <option value="association">Association</option>
-                                <option value="groupe">Zone / Groupe</option>
+                            <select name="beneficiaire_entity" id="cotisation_beneficiaire_select" onchange="updateCotisationHiddenFields()" required class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white">
+                                {% for ctxKey, cData in cotisationMatrices %}
+                                    <option value="{{ cData.context.type }}:{{ cData.context.id }}" data-type="{{ cData.context.type }}" data-id="{{ cData.context.id }}">
+                                        {{ cData.context.label }}
+                                    </option>
+                                {% endfor %}
                             </select>
+                            <input type="hidden" name="context_type" id="cotisation_context_type" value="">
+                            <input type="hidden" name="context_id" id="cotisation_context_id" value="">
                         </div>
                     </div>
 
@@ -572,8 +609,44 @@
         });
     }
 
+    function switchCotisationContext(ctxKey) {
+        document.querySelectorAll('.cotisation-matrix-view').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.cotisation-ctx-btn').forEach(btn => {
+            btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+            btn.classList.add('bg-white', 'text-slate-700', 'hover:bg-slate-200', 'border', 'border-slate-200');
+        });
+
+        const targetView = document.getElementById('cotisation-matrix-' + ctxKey);
+        if (targetView) {
+            targetView.classList.remove('hidden');
+            const sel = document.getElementById('cotisation_beneficiaire_select');
+            if (sel && targetView.dataset.ctxValue) {
+                sel.value = targetView.dataset.ctxValue;
+                updateCotisationHiddenFields();
+            }
+        }
+        const targetBtn = document.getElementById('btn-cotisation-' + ctxKey);
+        if (targetBtn) {
+            targetBtn.classList.remove('bg-white', 'text-slate-700', 'hover:bg-slate-200', 'border', 'border-slate-200');
+            targetBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+        }
+    }
+
+    function updateCotisationHiddenFields() {
+        const sel = document.getElementById('cotisation_beneficiaire_select');
+        if (!sel) return;
+        const selectedOption = sel.options[sel.selectedIndex];
+        if (selectedOption) {
+            const type = selectedOption.dataset.type || '';
+            const id = selectedOption.dataset.id || '';
+            document.getElementById('cotisation_context_type').value = type;
+            document.getElementById('cotisation_context_id').value = id;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         updateContextSelectOptions();
+        updateCotisationHiddenFields();
     });
 </script>
 {% endblock %}

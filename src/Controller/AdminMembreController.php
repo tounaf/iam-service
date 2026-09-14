@@ -257,35 +257,118 @@ class AdminMembreController extends AbstractController
         $cotisations = $em->getRepository(\App\Entity\Cotisation::class)->findBy(['membre' => $membre, 'annee' => $year], ['paidAt' => 'DESC']);
         $dons = $em->getRepository(\App\Entity\Don::class)->findBy(['membre' => $membre], ['paidAt' => 'DESC']);
 
-        // Build 12 months matrix x 4 tranches
-        $monthsMatrix = [];
-        for ($m = 1; $m <= 12; $m++) {
-            $monthsMatrix[$m] = [
-                'mois' => $m,
-                'tranches' => [1 => null, 2 => null, 3 => null, 4 => null],
-                'totalPaid' => 0.0,
+        // Build entity contexts list
+        $cotisationContexts = [];
+
+        if ($membre->getFiangonana()) {
+            $f = $membre->getFiangonana();
+            $cotisationContexts['fiangonana_' . $f->getId()] = [
+                'type' => 'fiangonana',
+                'id' => $f->getId(),
+                'label' => 'Paroisse: ' . $f->getNom(),
+                'shortLabel' => $f->getNom(),
             ];
         }
 
-        $totalCotisationsYear = 0.0;
-        $monthsPaidCount = 0;
+        if ($membre->getZoneGeographique()) {
+            $g = $membre->getZoneGeographique();
+            $cotisationContexts['groupe_' . $g->getId()] = [
+                'type' => 'groupe',
+                'id' => $g->getId(),
+                'label' => 'Groupe / Zone: ' . $g->getNom(),
+                'shortLabel' => $g->getNom(),
+            ];
+        }
+
+        foreach ($membre->getAssociations() as $a) {
+            $cotisationContexts['association_' . $a->getId()] = [
+                'type' => 'association',
+                'id' => $a->getId(),
+                'label' => 'Association: ' . $a->getNom(),
+                'shortLabel' => $a->getNom(),
+            ];
+        }
+
+        if (empty($cotisationContexts)) {
+            $cotisationContexts['general'] = [
+                'type' => 'general',
+                'id' => 0,
+                'label' => 'Cotisations Générales',
+                'shortLabel' => 'Général',
+            ];
+        }
+
+        $cotisationMatrices = [];
+        foreach ($cotisationContexts as $ctxKey => $ctxData) {
+            $matrix = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $matrix[$m] = [
+                    'mois' => $m,
+                    'tranches' => [1 => null, 2 => null, 3 => null, 4 => null],
+                    'totalPaid' => 0.0,
+                ];
+            }
+            $cotisationMatrices[$ctxKey] = [
+                'context' => $ctxData,
+                'monthsMatrix' => $matrix,
+                'totalCotisationsYear' => 0.0,
+                'monthsPaidCount' => 0,
+            ];
+        }
 
         foreach ($cotisations as $c) {
             $m = $c->getMois();
             $t = $c->getTranche();
-            $val = (float)$c->getMontant();
-            if ($m >= 1 && $m <= 12 && $t >= 1 && $t <= 4) {
-                $monthsMatrix[$m]['tranches'][$t] = $c;
-                $monthsMatrix[$m]['totalPaid'] += $val;
-                $totalCotisationsYear += $val;
+            $val = (float) $c->getMontant();
+
+            if ($m < 1 || $m > 12 || $t < 1 || $t > 4) {
+                continue;
+            }
+
+            $matchedKey = null;
+            if ($c->getAssociation()) {
+                $key = 'association_' . $c->getAssociation()->getId();
+                if (isset($cotisationMatrices[$key])) {
+                    $matchedKey = $key;
+                }
+            } elseif ($c->getGroupe()) {
+                $key = 'groupe_' . $c->getGroupe()->getId();
+                if (isset($cotisationMatrices[$key])) {
+                    $matchedKey = $key;
+                }
+            } elseif ($c->getFiangonana()) {
+                $key = 'fiangonana_' . $c->getFiangonana()->getId();
+                if (isset($cotisationMatrices[$key])) {
+                    $matchedKey = $key;
+                }
+            }
+
+            if (!$matchedKey) {
+                $matchedKey = array_key_first($cotisationMatrices);
+            }
+
+            if ($matchedKey && isset($cotisationMatrices[$matchedKey])) {
+                $cotisationMatrices[$matchedKey]['monthsMatrix'][$m]['tranches'][$t] = $c;
+                $cotisationMatrices[$matchedKey]['monthsMatrix'][$m]['totalPaid'] += $val;
+                $cotisationMatrices[$matchedKey]['totalCotisationsYear'] += $val;
             }
         }
 
-        foreach ($monthsMatrix as $m => $data) {
-            if ($data['totalPaid'] > 0) {
-                $monthsPaidCount++;
+        foreach ($cotisationMatrices as $ctxKey => &$ctxData) {
+            $paidMonths = 0;
+            foreach ($ctxData['monthsMatrix'] as $m => $mInfo) {
+                if ($mInfo['totalPaid'] > 0) {
+                    $paidMonths++;
+                }
             }
+            $ctxData['monthsPaidCount'] = $paidMonths;
         }
+        unset($ctxData);
+
+        $firstCtx = reset($cotisationMatrices);
+        $monthsMatrix = $firstCtx['monthsMatrix'];
+        $monthsPaidCount = $firstCtx['monthsPaidCount'];
+        $totalCotisationsYear = $firstCtx['totalCotisationsYear'];
 
         $totalDons = 0.0;
         foreach ($dons as $d) {
@@ -302,6 +385,7 @@ class AdminMembreController extends AbstractController
             'roles' => $roles,
             'presences' => $presences,
             'cotisations' => $cotisations,
+            'cotisationMatrices' => $cotisationMatrices,
             'dons' => $dons,
             'monthsMatrix' => $monthsMatrix,
             'monthsPaidCount' => $monthsPaidCount,
