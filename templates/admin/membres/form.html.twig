@@ -390,7 +390,7 @@
                                         {% set item = mData.tranches[tIdx] %}
                                         <td class="py-3 px-3 text-center">
                                             {% if item %}
-                                                <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 block" title="{{ item.paidAt }}">
+                                                <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 block" title="{{ item.paidAt | date('d/m/Y') }}">
                                                     {{ item.montant|number_format(0, ',', ' ') }} Ar
                                                 </span>
                                             {% else %}
