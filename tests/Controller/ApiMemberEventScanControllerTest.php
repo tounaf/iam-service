@@ -132,6 +132,115 @@ class ApiMemberEventScanControllerTest extends TestCase
         $this->assertEquals('Jean', $data['membre']['prenom']);
     }
 
+    public function testSearchMembers(): void
+    {
+        $currentUser = new Membre();
+        $currentUser->setEmail('officer@example.com');
+
+        $token = $this->createMock(UsernamePasswordToken::class);
+        $token->method('getUser')->willReturn($currentUser);
+
+        $tokenStorage = $this->createMock(TokenStorageInterface::class);
+        $tokenStorage->method('getToken')->willReturn($token);
+
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')->willReturnCallback(fn($id) => in_array($id, ['security.token_storage', 'security.authorization_checker'], true));
+        $container->method('get')->willReturnCallback(fn($id) => $id === 'security.token_storage' ? $tokenStorage : null);
+
+        $targetMembre = new Membre();
+        $targetMembre->setNom('Rakoto');
+        $targetMembre->setPrenom('Jean');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
+        $queryBuilder = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
+        $query = $this->createMock(\Doctrine\ORM\AbstractQuery::class);
+
+        $membreRepo->method('createQueryBuilder')->with('m')->willReturn($queryBuilder);
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('setParameter')->with('term', '%Rakoto%')->willReturnSelf();
+        $queryBuilder->method('setMaxResults')->with(20)->willReturnSelf();
+        $queryBuilder->method('orderBy')->with('m.nom', 'ASC')->willReturnSelf();
+        $queryBuilder->method('getQuery')->willReturn($query);
+        $query->method('getResult')->willReturn([$targetMembre]);
+
+        $em->method('getRepository')->with(Membre::class)->willReturn($membreRepo);
+
+        $controller = new ApiMemberEventScanController();
+        $controller->setContainer($container);
+
+        $request = Request::create('/api/member-events/search-members?q=Rakoto', 'GET');
+        $response = $controller->searchMembers($request, $em);
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertCount(1, $data['members']);
+        $this->assertEquals('Rakoto', $data['members'][0]['nom']);
+    }
+
+    public function testScanQrCodeWithMembreId(): void
+    {
+        $currentUser = new Membre();
+        $currentUser->setEmail('officer@example.com');
+
+        $token = $this->createMock(UsernamePasswordToken::class);
+        $token->method('getUser')->willReturn($currentUser);
+
+        $tokenStorage = $this->createMock(TokenStorageInterface::class);
+        $tokenStorage->method('getToken')->willReturn($token);
+
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')->willReturnCallback(fn($id) => in_array($id, ['security.token_storage', 'security.authorization_checker'], true));
+        $container->method('get')->willReturnCallback(fn($id) => $id === 'security.token_storage' ? $tokenStorage : null);
+
+        $evenement = new Evenement();
+        $evenement->setNom('Réunion Annuelle');
+
+        $targetMembre = new Membre();
+        $targetMembre->setNom('Rasoa');
+        $targetMembre->setPrenom('Jeanne');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $eventRepo = $this->createMock(EntityRepository::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
+        $presenceRepo = $this->createMock(EntityRepository::class);
+
+        $eventRepo->method('find')->with(12)->willReturn($evenement);
+        $membreRepo->method('find')->with(42)->willReturn($targetMembre);
+        $presenceRepo->method('findOneBy')->with(['membre' => $targetMembre, 'activityName' => 'Réunion Annuelle'])->willReturn(null);
+
+        $em->method('getRepository')->willReturnCallback(function ($class) use ($eventRepo, $membreRepo, $presenceRepo) {
+            return match ($class) {
+                Evenement::class => $eventRepo,
+                Membre::class => $membreRepo,
+                Presence::class => $presenceRepo,
+                default => null,
+            };
+        });
+
+        $em->expects($this->once())->method('persist');
+        $em->expects($this->once())->method('flush');
+
+        $controller = new ApiMemberEventScanController();
+        $controller->setContainer($container);
+
+        $request = Request::create('/api/member-events/12/scan', 'POST', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode([
+            'membreId' => 42,
+        ]));
+
+        $response = $controller->scanQrCode(12, $request, $em);
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true);
+        $this->assertStringContainsString('validée avec succès', $data['message']);
+        $this->assertEquals('Jeanne', $data['membre']['prenom']);
+    }
+
     public function testGetEventAttendeesReturnsList(): void
     {
         $currentUser = new Membre();
