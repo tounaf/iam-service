@@ -93,6 +93,47 @@ class ApiMemberEventScanController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
+    #[Route('/api/member-events/search-members', name: 'api_member_events_search_members', methods: ['GET'])]
+    public function searchMembers(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        /** @var Membre|null $currentUser */
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
+            return $this->json(['message' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $query = trim((string) $request->query->get('q', ''));
+        if ($query === '' || strlen($query) < 2) {
+            return $this->json(['members' => []]);
+        }
+
+        $term = '%' . $query . '%';
+        $qb = $em->getRepository(Membre::class)->createQueryBuilder('m')
+            ->where('m.nom LIKE :term OR m.prenom LIKE :term OR CONCAT(m.prenom, CONCAT(\' \', m.nom)) LIKE :term OR CONCAT(m.nom, CONCAT(\' \', m.prenom)) LIKE :term')
+            ->setParameter('term', $term)
+            ->setMaxResults(20)
+            ->orderBy('m.nom', 'ASC');
+
+        $membres = $qb->getQuery()->getResult();
+
+        $results = [];
+        foreach ($membres as $m) {
+            $results[] = [
+                'id' => $m->getId(),
+                'nom' => $m->getNom(),
+                'prenom' => $m->getPrenom(),
+                'email' => $m->getEmail(),
+                'telephone' => $m->getTelephone(),
+                'photoUrl' => $m->getPhotoUrl(),
+                'qrCodeToken' => $m->getQrCodeToken(),
+                'paroisse' => $m->getFiangonana()?->getNom(),
+                'groupe' => $m->getZoneGeographique()?->getNom(),
+            ];
+        }
+
+        return $this->json(['members' => $results]);
+    }
+
     #[Route('/api/member-events/{id}/scan', name: 'api_member_events_scan', methods: ['POST'])]
     public function scanQrCode(int $id, Request $request, EntityManagerInterface $em): JsonResponse
     {
@@ -109,14 +150,18 @@ class ApiMemberEventScanController extends AbstractController
 
         $data = json_decode($request->getContent(), true) ?: [];
         $qrCodeToken = trim($data['qrCodeToken'] ?? '');
+        $membreId = isset($data['membreId']) ? (int) $data['membreId'] : null;
 
-        if ($qrCodeToken === '') {
-            return $this->json(['message' => 'Token QR Code manquant'], Response::HTTP_BAD_REQUEST);
+        if ($membreId) {
+            $targetMembre = $em->getRepository(Membre::class)->find($membreId);
+        } elseif ($qrCodeToken !== '') {
+            $targetMembre = $em->getRepository(Membre::class)->findOneBy(['qrCodeToken' => $qrCodeToken]);
+        } else {
+            return $this->json(['message' => 'Token QR Code ou ID du membre manquant'], Response::HTTP_BAD_REQUEST);
         }
 
-        $targetMembre = $em->getRepository(Membre::class)->findOneBy(['qrCodeToken' => $qrCodeToken]);
         if (!$targetMembre) {
-            return $this->json(['message' => 'Membre non trouvé pour ce QR Code'], Response::HTTP_NOT_FOUND);
+            return $this->json(['message' => 'Membre non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
         // Check if member is already marked present for this event

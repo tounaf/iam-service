@@ -28,8 +28,13 @@ export function EventsView({ memberId, member }) {
   const [scanning, setScanning] = useState(false);
   const [scanFeedback, setScanFeedback] = useState(null);
 
-  // Camera Scanner active tab: 'camera' or 'manual'
+  // Camera Scanner active tab: 'camera', 'manual', or 'search'
   const [scanMode, setScanMode] = useState('camera');
+
+  // Member Search in Scan Modal State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchingMembers, setSearchingMembers] = useState(false);
 
   // Attendees Modal State
   const [attendeesModalEvent, setAttendeesModalEvent] = useState(null);
@@ -135,16 +140,18 @@ export function EventsView({ memberId, member }) {
     }
   }, [scanModalEvent, scanMode]);
 
-  const processScanToken = (token) => {
-    if (!token || !scanModalEvent || scanning) return;
+  const processScanToken = (token, targetMembreId = null) => {
+    if ((!token && !targetMembreId) || !scanModalEvent || scanning) return;
 
     setScanning(true);
     setScanFeedback(null);
 
+    const body = targetMembreId ? { membreId: targetMembreId } : { qrCodeToken: token };
+
     fetch(`/api/member-events/${scanModalEvent.id}/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qrCodeToken: token }),
+      body: JSON.stringify(body),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -154,6 +161,23 @@ export function EventsView({ memberId, member }) {
       })
       .catch((err) => setScanFeedback({ message: 'Erreur réseau lors du scan.' }))
       .finally(() => setScanning(false));
+  };
+
+  const handleSearchMembers = (query) => {
+    setSearchQuery(query);
+    if (!query || query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearchingMembers(true);
+    fetch(`/api/member-events/search-members?q=${encodeURIComponent(query.trim())}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setSearchResults(data.members || []);
+      })
+      .catch((err) => console.error('Error searching members:', err))
+      .finally(() => setSearchingMembers(false));
   };
 
   const handleCreateEvent = (e) => {
@@ -445,6 +469,8 @@ export function EventsView({ memberId, member }) {
                       setScanModalEvent(event);
                       setScanFeedback(null);
                       setQrTokenInput('');
+                      setSearchQuery('');
+                      setSearchResults([]);
                       setScanMode('camera');
                     }}
                     className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-100 transition flex items-center"
@@ -753,28 +779,39 @@ export function EventsView({ memberId, member }) {
               </h3>
             </div>
 
-            {/* Scan Mode Toggle: Camera vs Manual Input */}
+            {/* Scan Mode Toggle: Camera vs Manual Token vs Search Member */}
             <div className="flex bg-slate-100 p-1 rounded-2xl text-xs font-bold">
               <button
                 type="button"
                 onClick={() => setScanMode('camera')}
-                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-2 ${
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-1.5 ${
                   scanMode === 'camera' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <i className="fa-solid fa-camera"></i>
-                <span>Scanner Caméra Direct</span>
+                <span>Caméra</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setScanMode('manual')}
-                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-2 ${
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-1.5 ${
                   scanMode === 'manual' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <i className="fa-solid fa-keyboard"></i>
-                <span>Saisie Manuelle</span>
+                <span>Token</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setScanMode('search')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-1.5 ${
+                  scanMode === 'search' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <i className="fa-solid fa-user-tag"></i>
+                <span>Nom / Prénom</span>
               </button>
             </div>
 
@@ -855,6 +892,91 @@ export function EventsView({ memberId, member }) {
                   </button>
                 </div>
               </form>
+            )}
+
+            {/* Member Search Form */}
+            {scanMode === 'search' && (
+              <div className="space-y-3 pt-1">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Rechercher un membre par nom ou prénom
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="Saisissez nom ou prénom (ex: Rakoto, Marie...)"
+                      value={searchQuery}
+                      onChange={(e) => handleSearchMembers(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Search Results */}
+                <div className="max-h-56 overflow-y-auto space-y-2 pr-1 pt-1">
+                  {searchingMembers ? (
+                    <div className="p-4 text-center text-slate-400 text-xs">
+                      <i className="fa-solid fa-spinner fa-spin mr-2"></i> Recherche en cours...
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.map((m) => (
+                      <div
+                        key={m.id}
+                        className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between space-x-3 hover:bg-slate-100/80 transition"
+                      >
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs overflow-hidden shrink-0">
+                            {m.photoUrl ? (
+                              <img src={m.photoUrl} className="w-full h-full object-cover" />
+                            ) : (
+                              m.prenom?.charAt(0)
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-800 text-xs truncate">
+                              {m.prenom} {m.nom}
+                            </p>
+                            <p className="text-[10px] text-slate-400 truncate">
+                              {m.paroisse ? `${m.paroisse}` : ''} {m.groupe ? `• ${m.groupe}` : ''}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={scanning}
+                          onClick={() => processScanToken(null, m.id)}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-sm transition whitespace-nowrap shrink-0 flex items-center"
+                        >
+                          <i className="fa-solid fa-check mr-1"></i> Présent
+                        </button>
+                      </div>
+                    ))
+                  ) : searchQuery.trim().length >= 2 ? (
+                    <div className="p-4 text-center text-slate-400 text-xs">
+                      Aucun membre trouvé pour "{searchQuery}".
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-slate-400 text-xs">
+                      Tapez au moins 2 lettres pour lancer la recherche.
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setScanModalEvent(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
             )}
 
             {scanMode === 'camera' && (
