@@ -51,6 +51,8 @@ class AdminFinancesController extends AbstractController
                 $cotisation->setAssociation($em->getRepository(Association::class)->find($contextId));
             } elseif ($contextType === 'groupe' && $contextId) {
                 $cotisation->setGroupe($em->getRepository(Groupe::class)->find($contextId));
+            } elseif ($contextType === 'fiangonana' && $contextId) {
+                $cotisation->setFiangonana($em->getRepository(Fiangonana::class)->find($contextId));
             } elseif ($membre->getFiangonana()) {
                 $cotisation->setFiangonana($membre->getFiangonana());
             }

@@ -65,6 +65,57 @@ class FinancesControllerTest extends TestCase
         return $container;
     }
 
+    public function testAddCotisationWithAssociationContext(): void
+    {
+        $membre = new Membre();
+        $membre->setNom('Rabe');
+        $membre->setPrenom('Jean');
+
+        $association = new Association();
+        $association->setNom('STK');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
+        $assocRepo = $this->createMock(EntityRepository::class);
+
+        $membreRepo->method('find')->with(1)->willReturn($membre);
+        $assocRepo->method('find')->with(3)->willReturn($association);
+
+        $em->method('getRepository')->willReturnCallback(function ($entityClass) use ($membreRepo, $assocRepo) {
+            return match ($entityClass) {
+                Membre::class => $membreRepo,
+                Association::class => $assocRepo,
+                default => null,
+            };
+        });
+
+        $em->expects($this->once())->method('persist')->with($this->callback(function ($c) use ($membre, $association) {
+            return $c instanceof Cotisation
+                && $c->getMembre() === $membre
+                && $c->getAssociation() === $association
+                && $c->getMois() === 5
+                && $c->getTranche() === 1
+                && (float)$c->getMontant() === 10000.0;
+        }));
+        $em->expects($this->once())->method('flush');
+
+        $controller = new AdminFinancesController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/membres/1/add-cotisation', 'POST', [
+            'annee' => 2026,
+            'mois' => 5,
+            'tranche' => 1,
+            'montant' => '10000',
+            'context_type' => 'association',
+            'context_id' => '3',
+        ]);
+
+        $response = $controller->addCotisation(1, $request, $em);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+    }
+
     public function testAddCotisationInFourInstallments(): void
     {
         $membre = new Membre();
