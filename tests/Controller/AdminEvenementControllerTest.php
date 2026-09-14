@@ -80,14 +80,26 @@ class AdminEvenementControllerTest extends TestCase
         $em = $this->createMock(EntityManagerInterface::class);
         $eventRepo = $this->createMock(EntityRepository::class);
         $presenceRepo = $this->createMock(EntityRepository::class);
+        $groupeRepo = $this->createMock(EntityRepository::class);
+        $assocRepo = $this->createMock(EntityRepository::class);
+        $fiangonanaRepo = $this->createMock(EntityRepository::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
 
         $eventRepo->method('find')->with(1)->willReturn($evenement);
         $presenceRepo->method('findBy')->with(['activityName' => 'Formation des Jeunes'], ['scannedAt' => 'DESC'])->willReturn([$presence]);
+        $groupeRepo->method('findAll')->willReturn([]);
+        $assocRepo->method('findAll')->willReturn([$association]);
+        $fiangonanaRepo->method('findAll')->willReturn([]);
+        $membreRepo->method('findBy')->willReturn([]);
 
-        $em->method('getRepository')->willReturnCallback(function ($class) use ($eventRepo, $presenceRepo) {
+        $em->method('getRepository')->willReturnCallback(function ($class) use ($eventRepo, $presenceRepo, $groupeRepo, $assocRepo, $fiangonanaRepo, $membreRepo) {
             return match ($class) {
                 Evenement::class => $eventRepo,
                 Presence::class => $presenceRepo,
+                \App\Entity\Groupe::class => $groupeRepo,
+                Association::class => $assocRepo,
+                \App\Entity\Fiangonana::class => $fiangonanaRepo,
+                Membre::class => $membreRepo,
                 default => null,
             };
         });

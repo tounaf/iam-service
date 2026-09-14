@@ -88,6 +88,78 @@ class AdminEvenementController extends AbstractController
             ? round(($lateMembersCount / $presentCount) * 100, 1)
             : 0;
 
+        // 1. Groupes / Zones stats
+        $groupes = $em->getRepository(Groupe::class)->findAll();
+        $groupStats = [];
+        foreach ($groupes as $g) {
+            $totalMembers = count($em->getRepository(Membre::class)->findBy(['zoneGeographique' => $g]));
+            $presentMembersCount = 0;
+            foreach ($presentMembers as $item) {
+                /** @var Presence $p */
+                $p = $item['presence'];
+                if ($p->getMembre() && $p->getMembre()->getZoneGeographique()?->getId() === $g->getId()) {
+                    $presentMembersCount++;
+                }
+            }
+            if ($totalMembers > 0 || $presentMembersCount > 0) {
+                $rate = $totalMembers > 0 ? round(($presentMembersCount / $totalMembers) * 100, 1) : 0;
+                $groupStats[] = [
+                    'groupe' => $g,
+                    'total' => $totalMembers,
+                    'present' => $presentMembersCount,
+                    'rate' => $rate,
+                ];
+            }
+        }
+
+        // 2. Associations stats
+        $associations = $em->getRepository(Association::class)->findAll();
+        $associationStats = [];
+        foreach ($associations as $a) {
+            $totalMembers = count($a->getMembres());
+            $presentMembersCount = 0;
+            foreach ($presentMembers as $item) {
+                /** @var Presence $p */
+                $p = $item['presence'];
+                if ($p->getMembre() && $p->getMembre()->getAssociations()->contains($a)) {
+                    $presentMembersCount++;
+                }
+            }
+            if ($totalMembers > 0 || $presentMembersCount > 0) {
+                $rate = $totalMembers > 0 ? round(($presentMembersCount / $totalMembers) * 100, 1) : 0;
+                $associationStats[] = [
+                    'association' => $a,
+                    'total' => $totalMembers,
+                    'present' => $presentMembersCount,
+                    'rate' => $rate,
+                ];
+            }
+        }
+
+        // 3. Paroisses stats
+        $fiangonanas = $em->getRepository(Fiangonana::class)->findAll();
+        $fiangonanaStats = [];
+        foreach ($fiangonanas as $f) {
+            $totalMembers = count($em->getRepository(Membre::class)->findBy(['fiangonana' => $f]));
+            $presentMembersCount = 0;
+            foreach ($presentMembers as $item) {
+                /** @var Presence $p */
+                $p = $item['presence'];
+                if ($p->getMembre() && $p->getMembre()->getFiangonana()?->getId() === $f->getId()) {
+                    $presentMembersCount++;
+                }
+            }
+            if ($totalMembers > 0 || $presentMembersCount > 0) {
+                $rate = $totalMembers > 0 ? round(($presentMembersCount / $totalMembers) * 100, 1) : 0;
+                $fiangonanaStats[] = [
+                    'fiangonana' => $f,
+                    'total' => $totalMembers,
+                    'present' => $presentMembersCount,
+                    'rate' => $rate,
+                ];
+            }
+        }
+
         return $this->render('admin/evenements/show.html.twig', [
             'current_route' => 'admin_evenement',
             'evenement' => $evenement,
@@ -98,6 +170,9 @@ class AdminEvenementController extends AbstractController
             'scopeName' => $scopeName,
             'tauxParticipation' => $tauxParticipation,
             'tauxRetard' => $tauxRetard,
+            'groupStats' => $groupStats,
+            'associationStats' => $associationStats,
+            'fiangonanaStats' => $fiangonanaStats,
         ]);
     }
 
