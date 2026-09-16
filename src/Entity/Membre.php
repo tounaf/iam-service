@@ -33,6 +33,12 @@ use Symfony\Component\Serializer\Annotation\Groups;
             serialize: false
         ),
         new Get(
+            uriTemplate: '/membres/{id}/fiche',
+            controller: \App\Controller\MembreCarteController::class,
+            read: false,
+            serialize: false
+        ),
+        new Get(
             uriTemplate: '/membres/{id}/carte',
             controller: \App\Controller\MembreCarteController::class,
             read: false,
