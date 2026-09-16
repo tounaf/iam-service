@@ -110,6 +110,54 @@ class MembreCarteControllerTest extends TestCase
         $this->assertNotEmpty($data['qrCodeBase64']);
     }
 
+    public function testInvokeForFicheEndpointReturnsJsonResponseAndHtml(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Paroisse Fiche');
+
+        $groupe = new Groupe();
+        $groupe->setNom('Zone Fiche');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(20);
+        $member->method('getNom')->willReturn('Andria');
+        $member->method('getPrenom')->willReturn('Soa');
+        $member->method('getEmail')->willReturn('soa@example.com');
+        $member->method('getTelephone')->willReturn('+261330000000');
+        $member->method('getQrCodeToken')->willReturn('token-fiche-456');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getZoneGeographique')->willReturn($groupe);
+        $member->method('getAssociations')->willReturn(new ArrayCollection());
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->willReturn('<html>Soa Andria - Fiche Membre</html>');
+
+        $controller = new MembreCarteController($twig);
+
+        // Test JSON format on /api/membres/20/fiche
+        $requestJson = Request::create('/api/membres/20/fiche?format=json');
+        $responseJson = $controller->__invoke($member, $requestJson);
+
+        $this->assertInstanceOf(JsonResponse::class, $responseJson);
+        $this->assertEquals(Response::HTTP_OK, $responseJson->getStatusCode());
+        $data = json_decode($responseJson->getContent(), true);
+        $this->assertEquals(20, $data['id']);
+        $this->assertEquals('Andria', $data['nom']);
+        $this->assertEquals('Soa', $data['prenom']);
+        $this->assertEquals('token-fiche-456', $data['qrCodeToken']);
+        $this->assertNotEmpty($data['qrCodeBase64']);
+
+        // Test HTML format on /api/membres/20/fiche
+        $requestHtml = Request::create('/api/membres/20/fiche');
+        $responseHtml = $controller->__invoke($member, $requestHtml);
+
+        $this->assertInstanceOf(Response::class, $responseHtml);
+        $this->assertEquals(Response::HTTP_OK, $responseHtml->getStatusCode());
+        $this->assertStringContainsString('Soa Andria - Fiche Membre', $responseHtml->getContent());
+    }
+
     public function testInvokeReturnsJsonResponseWithCompleteMemberDetails(): void
     {
         $fiangonana = new Fiangonana();
