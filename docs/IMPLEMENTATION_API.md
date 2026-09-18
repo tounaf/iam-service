@@ -132,9 +132,10 @@ Chaque membre possède un identifiant de QR code unique (`qrCodeToken`) génér�
     *   *Format* : Retourne directement un flux d'image binaire avec le header HTTP `Content-Type: image/png`.
 
 #### 3. Enregistrement d'une présence ou participation (scan)
-Lorsqu'un membre présente sa carte lors d'un événement, d'une activité de groupe/association ou d'une formation des jeunes, le responsable scanne le QR code (le QR code pointe directement vers `/membres/scan/{token}`) :
-*   `GET|POST /membres/scan/{token}` : Portal web interactif de prise de présence par scan.
-*   `POST /api/presences` : Endpoint REST pour enregistrer une présence.
+Lorsqu'un membre se présente à un événement (formation des jeunes, réunion d'association, culte, etc.), il présente sa carte de membre contenant son QR Code unique. Le responsable/scanneur scanne le QR Code (qui pointe vers le service de présence `/membres/scan/{token}` ou est décodé directement dans l'Espace Membre) :
+*   `GET|POST /membres/scan/{token}` : Portail web interactif de prise de présence par scan (rend un formulaire HTML ou accepte un POST pour valider l'activité).
+*   `POST /api/member-events/{id}/scan` : Endpoint dédié dans l'Espace Membre React pour enregistrer instantanément la présence à un événement via caméra, token ou recherche par nom/prénom.
+*   `POST /api/presences` : Endpoint REST API Platform pour enregistrer une présence de manière programmatique.
     *   *Payload* :
         ```json
         {
@@ -143,7 +144,7 @@ Lorsqu'un membre présente sa carte lors d'un événement, d'une activité de gr
           "scannedBy": "/api/membres/1"
         }
         ```
-*   `GET /api/presences` : Liste de toutes les présences.
+*   `GET /api/presences` : Liste de toutes les présences enregistrées.
 
 #### 4. Suivi et Taux de Participation Annuel
 *   `GET /api/membres/{id}/participation-stats` : Calcule le taux de participation annuel d'un membre (`?year=2026`), fournissant le nombre total d'activités, le nombre d'activités assistées, le pourcentage de participation, le nombre et le taux de retards (`lateCount`, `lateRate`), ainsi que les journaux de présence enrichis de l'état de retard (`isLate`, `delayMinutes`).
