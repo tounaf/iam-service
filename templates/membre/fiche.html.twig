@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Membre - {{ nom }} {{ prenom }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-sheet {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+                margin: 0 auto;
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen flex flex-col items-center justify-start p-4 sm:p-8">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex items-center justify-between w-full max-w-4xl">
+        <a href="/api/membres/{{ memberId }}/carte" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center">
+            &larr; Voir la Carte Badge
+        </a>
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition duration-200 flex items-center text-sm">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimer la fiche membre
+        </button>
+    </div>
+
+    <!-- Main Printable Fiche Sheet -->
+    <div class="print-sheet bg-white w-full max-w-4xl rounded-3xl shadow-xl overflow-hidden border border-slate-200 flex flex-col">
+
+        <!-- Header Bar -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-900 to-blue-900 text-white p-6 flex justify-between items-center">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-widest text-indigo-300">Fiche Membre Officielle</p>
+                <h1 class="text-xl sm:text-2xl font-black text-white mt-1">{{ fiangonanaNom }}</h1>
+            </div>
+            <div class="text-right">
+                <span class="bg-indigo-500/30 text-indigo-100 text-xs font-extrabold uppercase tracking-wider px-3 py-1.5 rounded-lg border border-indigo-400/30">
+                    ID #{{ memberId }}
+                </span>
+            </div>
+        </div>
+
+        <div class="p-6 sm:p-8 space-y-8">
+
+            <!-- Top Profile & Identity Row -->
+            <div class="flex flex-col md:flex-row items-center md:items-start gap-6 pb-6 border-b border-slate-100">
+                <!-- Avatar / Photo -->
+                <div class="w-32 h-32 rounded-2xl border-4 border-slate-100 shadow-sm overflow-hidden bg-slate-50 shrink-0 flex items-center justify-center">
+                    {% if photoUrl %}
+                        <img src="{{ photoUrl }}" alt="{{ prenom }} {{ nom }}" class="w-full h-full object-cover" />
+                    {% else %}
+                        <div class="w-full h-full bg-indigo-100 text-indigo-700 font-black text-4xl flex items-center justify-center">
+                            {{ prenom ? prenom|slice(0, 1)|upper : 'M' }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Personal Identity & Contact Details -->
+                <div class="flex-1 space-y-4 text-center md:text-left">
+                    <div>
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                            <h2 class="text-2xl font-extrabold text-slate-800">{{ prenom }} {{ nom }}</h2>
+                            {% if age is defined and age is not null %}
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                    {{ age }} ans
+                                </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs font-semibold text-slate-400 mt-1">Information d'Identité & Contact</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Email</span>
+                            <span class="font-bold text-slate-700 break-all">{{ email ?: 'Non renseigné' }}</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Téléphone</span>
+                            <span class="font-bold text-slate-700">{{ telephone }}</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Date de Naissance</span>
+                            <span class="font-bold text-slate-700">{{ dateNaissance }}</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Adresse</span>
+                            <span class="font-bold text-slate-700">{{ adresse }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Affiliations & QR Code Scan Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Left 2 Cols: Church Affiliations & Roles -->
+                <div class="md:col-span-2 space-y-4">
+                    <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
+                        <svg class="w-4 h-4 text-indigo-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h5m-5 0V11m0 0V5"></path></svg>
+                        Affiliations & Mandats au sein de l'Église
+                    </h3>
+
+                    <div class="space-y-3 text-xs">
+                        <div class="flex justify-between items-center py-2.5 px-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-slate-500 font-semibold">Paroisse d'Appartenance</span>
+                            <span class="font-extrabold text-slate-800">{{ fiangonanaNom }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2.5 px-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-slate-500 font-semibold">Zone Géographique / Groupe</span>
+                            <span class="font-extrabold text-slate-800">{{ groupeNom }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2.5 px-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-slate-500 font-semibold">Associations & Section</span>
+                            <span class="font-extrabold text-slate-800">{{ associationsStr }}</span>
+                        </div>
+
+                        {% if rolesList is defined and rolesList|length > 0 %}
+                            <div class="pt-2">
+                                <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Responsabilités & Rôles Actifs</p>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for r in rolesList %}
+                                        <span class="px-3 py-1 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-lg font-bold text-xs">
+                                            {{ r.role }} <span class="font-normal text-indigo-600">({{ r.context }})</span>
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Right 1 Col: QR Code Box -->
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center space-y-3">
+                    <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Badge QR Code Présence</span>
+                    <div class="p-2 bg-white rounded-xl shadow-sm border border-slate-200">
+                        <img src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code du membre" class="w-36 h-36" />
+                    </div>
+                    <p class="text-[10px] font-mono text-slate-500 font-bold">Token: {{ token }}</p>
+                    <p class="text-[10px] text-slate-400 leading-tight">
+                        Utilisé lors des cultes, formations des jeunes et réunions pour la prise de présence instantanée via QR code.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Annual Participation Statistics -->
+            {% if stats is defined and stats is not null %}
+                <div class="pt-4 border-t border-slate-100 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
+                            <svg class="w-4 h-4 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            Taux & Statistiques de Participation Annuelle ({{ year }})
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-indigo-50/70 p-3.5 rounded-2xl border border-indigo-100 text-center">
+                            <p class="text-[10px] font-bold text-indigo-500 uppercase">Événements Totaux</p>
+                            <p class="text-xl font-black text-indigo-900 mt-1">{{ stats.totalActivitiesCount }}</p>
+                        </div>
+                        <div class="bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-100 text-center">
+                            <p class="text-[10px] font-bold text-emerald-500 uppercase">Présences Validées</p>
+                            <p class="text-xl font-black text-emerald-900 mt-1">{{ stats.attendedActivitiesCount }}</p>
+                        </div>
+                        <div class="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-100 text-center">
+                            <p class="text-[10px] font-bold text-blue-500 uppercase">Taux de Participation</p>
+                            <p class="text-xl font-black text-blue-900 mt-1">{{ stats.participationRate }} %</p>
+                        </div>
+                        <div class="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-100 text-center">
+                            <p class="text-[10px] font-bold text-amber-500 uppercase">À l'heure / Retards</p>
+                            <p class="text-xl font-black text-amber-900 mt-1">{{ stats.onTimeCount }} / {{ stats.lateCount }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Sheet Footer -->
+        <div class="bg-slate-50 px-8 py-4 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-500 font-medium">
+            <span>Identification Membre: #{{ memberId }} • {{ token }}</span>
+            <span class="font-bold text-indigo-700">Document Officiel de la Paroisse</span>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -447,14 +447,25 @@ export function ProfileView({ member, onRefresh }) {
               <p className="text-xs text-slate-400 italic">Aucun QR code généré. Veuillez demander à la direction.</p>
             )}
 
-            <a
-              href={`/api/membres/${member.id}/carte`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              <a
+                href={`/api/membres/${member.id}/carte`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center"
-            >
-                <i className="fa-solid fa-print mr-1.5"></i> Ouvrir la carte officielle format impression &rarr;
-            </a>
+              >
+                <i className="fa-solid fa-id-card mr-1.5"></i> Ouvrir la carte &rarr;
+              </a>
+              <span className="hidden sm:inline text-slate-300">•</span>
+              <a
+                href={`/api/membres/${member.id}/fiche`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+              >
+                <i className="fa-solid fa-file-invoice mr-1.5"></i> Ouvrir la fiche membre &rarr;
+              </a>
+            </div>
           </div>
         </div>
       )}
@@ -620,9 +631,17 @@ export function ProfileView({ member, onRefresh }) {
                 href={`/api/membres/${member.id}/carte`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center"
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center"
               >
-                <i className="fa-solid fa-print mr-2"></i> Imprimer la carte
+                <i className="fa-solid fa-id-card mr-2"></i> Imprimer la carte
+              </a>
+              <a
+                href={`/api/membres/${member.id}/fiche`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center"
+              >
+                <i className="fa-solid fa-file-invoice mr-2"></i> Imprimer la fiche
               </a>
             </div>
           </div>
