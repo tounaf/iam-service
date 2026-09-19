@@ -7,6 +7,7 @@ use App\Entity\Membre;
 use App\Entity\Fiangonana;
 use App\Entity\Groupe;
 use App\Entity\Association;
+use App\Service\AttendanceStatsService;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,7 +18,7 @@ use Twig\Environment;
 
 class MembreCarteControllerTest extends TestCase
 {
-    public function testInvokeReturnsHtmlResponseForValidMember(): void
+    public function testInvokeReturnsHtmlResponseForValidMemberCard(): void
     {
         $fiangonana = new Fiangonana();
         $fiangonana->setNom('Test Church');
@@ -66,6 +67,62 @@ class MembreCarteControllerTest extends TestCase
         $this->assertStringContainsString('Test Geographic Zone', $content);
     }
 
+    public function testInvokeReturnsFicheHtmlResponseForValidMember(): void
+    {
+        $fiangonana = new Fiangonana();
+        $fiangonana->setNom('Fiangonana Behoririka');
+
+        $groupe = new Groupe();
+        $groupe->setNom('Zone Ankatso');
+
+        $member = $this->createMock(Membre::class);
+        $member->method('getId')->willReturn(100);
+        $member->method('getNom')->willReturn('Andria');
+        $member->method('getPrenom')->willReturn('Tahina');
+        $member->method('getEmail')->willReturn('tahina@example.com');
+        $member->method('getTelephone')->willReturn('+261331122334');
+        $member->method('getAdresse')->willReturn('Lot 123 Bis Ankatso');
+        $member->method('getFiangonana')->willReturn($fiangonana);
+        $member->method('getZoneGeographique')->willReturn($groupe);
+        $member->method('getAssociations')->willReturn(new ArrayCollection());
+        $member->method('getRoleAssignments')->willReturn(new ArrayCollection());
+        $member->method('getQrCodeToken')->willReturn('TOKEN_FICHE_100');
+
+        $statsService = $this->createMock(AttendanceStatsService::class);
+        $statsService->method('getMemberStats')->willReturn([
+            'totalActivitiesCount' => 10,
+            'attendedActivitiesCount' => 8,
+            'participationRate' => 80.0,
+            'lateCount' => 1,
+            'onTimeCount' => 7,
+        ]);
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects($this->once())
+            ->method('render')
+            ->with(
+                'membre/fiche.html.twig',
+                $this->callback(function ($args) {
+                    return $args['nom'] === 'Andria'
+                        && $args['prenom'] === 'Tahina'
+                        && $args['fiangonanaNom'] === 'Fiangonana Behoririka'
+                        && $args['groupeNom'] === 'Zone Ankatso'
+                        && $args['stats']['participationRate'] === 80.0;
+                })
+            )
+            ->willReturn('<html>Fiche Membre Tahina Andria - 80% participation</html>');
+
+        $controller = new MembreCarteController($twig, $statsService);
+        $request = Request::create('/api/membres/100/fiche');
+        $request->attributes->set('_route', 'api_membre_fiche');
+
+        $response = $controller->__invoke($member, $request);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertStringContainsString('Fiche Membre Tahina Andria', $response->getContent());
+    }
+
     public function testInvokeReturnsJsonResponseWhenJsonRequested(): void
     {
         $fiangonana = new Fiangonana();
@@ -87,6 +144,7 @@ class MembreCarteControllerTest extends TestCase
         $member->method('getFiangonana')->willReturn($fiangonana);
         $member->method('getZoneGeographique')->willReturn($groupe);
         $member->method('getAssociations')->willReturn(new ArrayCollection([$assoc]));
+        $member->method('getRoleAssignments')->willReturn(new ArrayCollection());
 
         $twig = $this->createMock(Environment::class);
         $controller = new MembreCarteController($twig);
@@ -110,48 +168,60 @@ class MembreCarteControllerTest extends TestCase
         $this->assertNotEmpty($data['qrCodeBase64']);
     }
 
-    public function testInvokeReturnsJsonResponseWithCompleteMemberDetails(): void
+    public function testInvokeReturnsFicheJsonResponseForValidMember(): void
     {
         $fiangonana = new Fiangonana();
-        $fiangonana->setNom('Fiangonana Fenoarivo');
+        $fiangonana->setNom('Paroisse Isotry');
 
         $groupe = new Groupe();
-        $groupe->setNom('Zone Ouest');
+        $groupe->setNom('Zone Sud');
 
         $assoc = new Association();
-        $assoc->setNom('Sampana Tanora');
+        $assoc->setNom('Chorale Tanora');
 
         $member = $this->createMock(Membre::class);
-        $member->method('getId')->willReturn(15);
-        $member->method('getNom')->willReturn('Rakoto');
-        $member->method('getPrenom')->willReturn('Koto');
-        $member->method('getEmail')->willReturn('koto@example.com');
-        $member->method('getTelephone')->willReturn('+261321122334');
-        $member->method('getQrCodeToken')->willReturn('token-koto-888');
+        $member->method('getId')->willReturn(25);
+        $member->method('getNom')->willReturn('Raharison');
+        $member->method('getPrenom')->willReturn('Hery');
+        $member->method('getEmail')->willReturn('hery@example.com');
+        $member->method('getTelephone')->willReturn('+261320011223');
+        $member->method('getAdresse')->willReturn('Lot III B Isotry');
+        $member->method('getQrCodeToken')->willReturn('token-hery-25');
         $member->method('getFiangonana')->willReturn($fiangonana);
         $member->method('getZoneGeographique')->willReturn($groupe);
         $member->method('getAssociations')->willReturn(new ArrayCollection([$assoc]));
+        $member->method('getRoleAssignments')->willReturn(new ArrayCollection());
+
+        $statsService = $this->createMock(AttendanceStatsService::class);
+        $statsService->method('getMemberStats')->willReturn([
+            'totalActivitiesCount' => 12,
+            'attendedActivitiesCount' => 12,
+            'participationRate' => 100.0,
+            'lateCount' => 0,
+            'onTimeCount' => 12,
+        ]);
 
         $twig = $this->createMock(Environment::class);
-        $controller = new MembreCarteController($twig);
+        $controller = new MembreCarteController($twig, $statsService);
 
-        $request = Request::create('/api/membres/15/carte?format=json');
+        $request = Request::create('/api/membres/25/fiche?format=json');
+        $request->attributes->set('_route', 'api_membre_fiche');
+
         $response = $controller->__invoke($member, $request);
 
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
-        $this->assertEquals(15, $data['id']);
-        $this->assertEquals(15, $data['memberId']);
-        $this->assertEquals('Rakoto', $data['nom']);
-        $this->assertEquals('Koto', $data['prenom']);
-        $this->assertEquals('Fiangonana Fenoarivo', $data['fiangonanaNom']);
-        $this->assertEquals('Zone Ouest', $data['groupeNom']);
-        $this->assertArrayHasKey('associationsArray', $data);
-        $this->assertEquals('Sampana Tanora', $data['associationsStr']);
-        $this->assertStringContainsString('/membres/scan/token-koto-888', $data['scanUrl']);
-        $this->assertNotEmpty($data['qrCodeBase64']);
+        $this->assertEquals(25, $data['id']);
+        $this->assertEquals('Raharison', $data['nom']);
+        $this->assertEquals('Hery', $data['prenom']);
+        $this->assertEquals('Lot III B Isotry', $data['adresse']);
+        $this->assertEquals('Paroisse Isotry', $data['fiangonanaNom']);
+        $this->assertEquals('Zone Sud', $data['groupeNom']);
+        $this->assertEquals(['Chorale Tanora'], $data['associations']);
+        $this->assertEquals('token-hery-25', $data['qrCodeToken']);
+        $this->assertEquals(100.0, $data['participationStats']['participationRate']);
     }
 
     public function testInvokeThrowsNotFoundForNullMember(): void
