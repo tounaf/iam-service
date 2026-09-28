@@ -14,6 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
 class AdminMembreController extends AbstractController
@@ -459,5 +460,50 @@ class AdminMembreController extends AbstractController
         $this->addFlash('success', 'Rôle retiré avec succès.');
 
         return $this->redirectToRoute('admin_membre_edit', ['id' => $membreId]);
+    }
+
+    #[Route('/admin/membres/{id}/change-password', name: 'admin_membre_change_password', methods: ['POST'])]
+    public function changePassword(
+        int $id,
+        Request $request,
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $passwordHasher
+    ): Response {
+        $membre = $em->getRepository(Membre::class)->find($id);
+        if (!$membre) {
+            throw new NotFoundHttpException('Membre introuvable.');
+        }
+
+        $submittedToken = $request->request->get('_token');
+        if (!$this->isCsrfTokenValid('change_password_' . $membre->getId(), $submittedToken)) {
+            $this->addFlash('error', 'Jeton CSRF invalide.');
+            return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
+        }
+
+        $newPassword = $request->request->get('new_password', '');
+        $confirmPassword = $request->request->get('confirm_password', '');
+
+        if (trim($newPassword) === '') {
+            $this->addFlash('error', 'Le nouveau mot de passe ne peut pas être vide.');
+            return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
+        }
+
+        if (strlen($newPassword) < 6) {
+            $this->addFlash('error', 'Le mot de passe doit contenir au moins 6 caractères.');
+            return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            $this->addFlash('error', 'Les mots de passe ne correspondent pas.');
+            return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
+        }
+
+        $hashedPassword = $passwordHasher->hashPassword($membre, $newPassword);
+        $membre->setPassword($hashedPassword);
+        $em->flush();
+
+        $this->addFlash('success', sprintf('Mot de passe de %s %s modifié avec succès !', $membre->getPrenom(), $membre->getNom()));
+
+        return $this->redirectToRoute('admin_membre_edit', ['id' => $membre->getId()]);
     }
 }
