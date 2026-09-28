@@ -14,7 +14,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Twig\Environment;
 
-class MembreCarteController extends AbstractController
+class MembreFicheController extends AbstractController
 {
     private Environment $twig;
     private ?AttendanceStatsService $attendanceStatsService;
@@ -25,7 +25,7 @@ class MembreCarteController extends AbstractController
         $this->attendanceStatsService = $attendanceStatsService;
     }
 
-    #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
+    #[Route('/api/membres/{id}/fiche', name: 'api_membre_fiche', methods: ['GET'])]
     public function __invoke(?Membre $membre, ?Request $request = null): Response
     {
         if (!$membre) {
@@ -46,13 +46,12 @@ class MembreCarteController extends AbstractController
         // Generate QR code inline as base64
         $qrCode = new QrCode(
             data: $qrData,
-            size: 150,
+            size: 180,
             margin: 5
         );
         $writer = new PngWriter();
         $qrCodeBase64 = base64_encode($writer->write($qrCode)->getString());
 
-        // Get church, group/zone and associations details
         $fiangonanaNom = $membre->getFiangonana() ? $membre->getFiangonana()->getNom() : 'Paroisse';
         $fiangonanaNom = $fiangonanaNom ?? 'Paroisse';
 
@@ -75,9 +74,16 @@ class MembreCarteController extends AbstractController
         $prenom = $membre->getPrenom() ?? '';
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
+        $adresse = $membre->getAdresse() ?? 'Non renseignée';
+        $dateNaissance = $membre->getDateNaissance() ? $membre->getDateNaissance()->format('Y-m-d') : null;
+        $age = $membre->getAge();
+        $photoUrl = $membre->getPhotoUrl();
 
-        if ($request === null) {
-            $request = Request::createFromGlobals();
+        $stats = null;
+        if ($this->attendanceStatsService !== null) {
+            try {
+                $stats = $this->attendanceStatsService->getMemberStats($membre, (int)date('Y'));
+            } catch (\Throwable $e) {}
         }
 
         $acceptHeader = $request->headers->get('Accept', '');
@@ -91,6 +97,10 @@ class MembreCarteController extends AbstractController
                 'prenom' => $prenom,
                 'email' => $email,
                 'telephone' => $telephone,
+                'adresse' => $adresse,
+                'dateNaissance' => $dateNaissance,
+                'age' => $age,
+                'photoUrl' => $photoUrl,
                 'fiangonanaNom' => $fiangonanaNom,
                 'groupeNom' => $groupeNom,
                 'associations' => $associationsList,
@@ -99,23 +109,30 @@ class MembreCarteController extends AbstractController
                 'qrCodeToken' => $token,
                 'qrCodeBase64' => $qrCodeBase64,
                 'scanUrl' => $scanUrl,
+                'stats' => $stats,
             ], Response::HTTP_OK, [
                 'Cache-Control' => 'public, max-age=3600'
             ]);
         }
 
-        $html = $this->twig->render('membre/carte.html.twig', [
+        $html = $this->twig->render('membre/fiche.html.twig', [
+            'memberId' => $membre->getId(),
             'nom' => $nom,
             'prenom' => $prenom,
             'email' => $email,
             'telephone' => $telephone,
+            'adresse' => $adresse,
+            'dateNaissance' => $dateNaissance,
+            'age' => $age,
+            'photoUrl' => $photoUrl,
             'fiangonanaNom' => $fiangonanaNom,
             'groupeNom' => $groupeNom,
             'associationsStr' => $associationsStr,
+            'associationsList' => $associationsList,
             'qrCodeBase64' => $qrCodeBase64,
-            'memberId' => $membre->getId(),
             'token' => $token,
             'scanUrl' => $scanUrl,
+            'stats' => $stats,
         ]);
 
         return new Response(
