@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class AdminMembreControllerTest extends TestCase
@@ -26,7 +27,9 @@ class AdminMembreControllerTest extends TestCase
     {
         $container = $this->createMock(ContainerInterface::class);
 
-        $container->method('has')->with('request_stack')->willReturn(true);
+        $container->method('has')->willReturnCallback(function ($id) {
+            return in_array($id, ['request_stack', 'security.csrf.token_manager'], true);
+        });
         $container->method('get')->willReturnCallback(function ($id) {
             if ($id === 'request_stack') {
                 $requestStack = new RequestStack();
@@ -42,6 +45,13 @@ class AdminMembreControllerTest extends TestCase
                     return '/admin/membres/' . ($params['id'] ?? 1) . '/editer';
                 });
                 return $router;
+            }
+            if ($id === 'security.csrf.token_manager') {
+                $csrfManager = $this->createMock(\Symfony\Component\Security\Csrf\CsrfTokenManagerInterface::class);
+                $csrfManager->method('isTokenValid')->willReturnCallback(function ($token) {
+                    return $token->getValue() === 'valid_token';
+                });
+                return $csrfManager;
             }
             return null;
         });
@@ -265,5 +275,98 @@ class AdminMembreControllerTest extends TestCase
         $response = $controller->delete(15, $request, $em);
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
+    }
+
+    public function testChangePasswordSuccess(): void
+    {
+        $membre = new Membre();
+        $membre->setNom('Rakoto');
+        $membre->setPrenom('Jean');
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
+        $passwordHasher = $this->createMock(UserPasswordHasherInterface::class);
+
+        $membreRepo->method('find')->with(20)->willReturn($membre);
+        $em->method('getRepository')->with(Membre::class)->willReturn($membreRepo);
+
+        $passwordHasher->expects($this->once())
+            ->method('hashPassword')
+            ->with($membre, 'newpassword123')
+            ->willReturn('hashed_secret_password');
+
+        $em->expects($this->once())->method('flush');
+
+        $controller = new AdminMembreController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/membres/20/change-password', 'POST', [
+            '_token' => 'valid_token',
+            'new_password' => 'newpassword123',
+            'confirm_password' => 'newpassword123',
+        ]);
+
+        $response = $controller->changePassword(20, $request, $em, $passwordHasher);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertEquals('hashed_secret_password', $membre->getPassword());
+    }
+
+    public function testChangePasswordMismatch(): void
+    {
+        $membre = new Membre();
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
+        $passwordHasher = $this->createMock(UserPasswordHasherInterface::class);
+
+        $membreRepo->method('find')->with(20)->willReturn($membre);
+        $em->method('getRepository')->with(Membre::class)->willReturn($membreRepo);
+
+        $passwordHasher->expects($this->never())->method('hashPassword');
+        $em->expects($this->never())->method('flush');
+
+        $controller = new AdminMembreController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/membres/20/change-password', 'POST', [
+            '_token' => 'valid_token',
+            'new_password' => 'newpassword123',
+            'confirm_password' => 'differentpassword',
+        ]);
+
+        $response = $controller->changePassword(20, $request, $em, $passwordHasher);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertNull($membre->getPassword());
+    }
+
+    public function testChangePasswordTooShort(): void
+    {
+        $membre = new Membre();
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
+        $passwordHasher = $this->createMock(UserPasswordHasherInterface::class);
+
+        $membreRepo->method('find')->with(20)->willReturn($membre);
+        $em->method('getRepository')->with(Membre::class)->willReturn($membreRepo);
+
+        $passwordHasher->expects($this->never())->method('hashPassword');
+        $em->expects($this->never())->method('flush');
+
+        $controller = new AdminMembreController();
+        $controller->setContainer($this->createMockContainer());
+
+        $request = Request::create('/admin/membres/20/change-password', 'POST', [
+            '_token' => 'valid_token',
+            'new_password' => '12345',
+            'confirm_password' => '12345',
+        ]);
+
+        $response = $controller->changePassword(20, $request, $em, $passwordHasher);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertNull($membre->getPassword());
     }
 }
