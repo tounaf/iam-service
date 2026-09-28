@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Individuelle Membre - {{ nom }} {{ prenom }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-fiche {
+                box-shadow: none;
+                border: 1px solid #e2e8f0;
+                margin: 0 auto;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex space-x-4">
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition duration-200 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimer la fiche
+        </button>
+    </div>
+
+    <!-- Official Member Detailed Fiche -->
+    <div class="print-fiche bg-white w-full max-w-3xl rounded-3xl shadow-xl overflow-hidden border border-slate-200 flex flex-col relative">
+
+        <!-- Top Header -->
+        <div class="bg-gradient-to-r from-slate-800 via-indigo-900 to-blue-900 text-white p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-widest text-indigo-300">Fiche Individuelle de Membre</p>
+                <h1 class="text-xl font-bold mt-1">{{ fiangonanaNom }}</h1>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-right">
+                <p class="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">Identifiant Membre</p>
+                <p class="text-lg font-mono font-bold text-white">#{{ memberId }}</p>
+            </div>
+        </div>
+
+        <!-- Main Body -->
+        <div class="p-8 space-y-8">
+
+            <!-- Profile & Identity Section -->
+            <div class="flex flex-col sm:flex-row gap-6 items-start pb-6 border-b border-slate-200">
+                <!-- Avatar / Photo -->
+                <div class="w-32 h-36 rounded-2xl border-2 border-slate-200 overflow-hidden bg-slate-50 shrink-0 shadow-sm flex items-center justify-center">
+                    {% if photoUrl %}
+                        <img src="{{ photoUrl }}" alt="{{ prenom }}" class="w-full h-full object-cover" />
+                    {% else %}
+                        <div class="w-full h-full bg-indigo-100 text-indigo-700 font-extrabold text-4xl flex items-center justify-center">
+                            {{ prenom ? prenom|slice(0, 1)|upper : 'M' }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Info summary -->
+                <div class="flex-1 space-y-3">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nom & Prénom</span>
+                        <h2 class="text-2xl font-black text-slate-800 leading-tight">{{ nom }} {{ prenom }}</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-xs">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Adresse Email</span>
+                            <span class="font-bold text-slate-700">{{ email|default('Non renseigné') }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Téléphone</span>
+                            <span class="font-bold text-slate-700">{{ telephone|default('Non renseigné') }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Adresse Résidentielle</span>
+                            <span class="font-bold text-slate-700">{{ adresse|default('Non renseignée') }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Date de Naissance / Âge</span>
+                            <span class="font-bold text-slate-700">
+                                {{ dateNaissance ? dateNaissance|date('d/m/Y') : 'Non renseignée' }}
+                                {% if age is defined and age is not null %} ({{ age }} ans){% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Affiliations & Structure Section -->
+            <div class="space-y-3">
+                <h3 class="text-xs font-black uppercase tracking-wider text-indigo-700 flex items-center">
+                    Structure & Affiliations
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Paroisse / Fiangonana</span>
+                        <span class="font-bold text-slate-800">{{ fiangonanaNom }}</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Zone / Groupe</span>
+                        <span class="font-bold text-slate-800">{{ groupeNom }}</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Associations</span>
+                        <span class="font-bold text-slate-800">{{ associationsStr }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR Code & Presence Check-in Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
+                <div class="space-y-2">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-indigo-900">
+                        Code QR pour Pointage
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Ce code QR est attribué de manière permanente au membre pour enregistrer sa présence lors des réunions, formations et évènements.
+                    </p>
+                    <div class="pt-2 text-[11px] font-mono text-slate-500">
+                        Token unique: <span class="font-bold text-slate-800">{{ token }}</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <img class="w-36 h-36 object-contain" src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code Présence Membre" />
+                    <span class="text-[9px] uppercase tracking-widest text-slate-400 mt-2 font-bold">Scanner pour présence</span>
+                </div>
+            </div>
+
+            <!-- Participation Stats Summary (if present) -->
+            {% if stats is defined and stats is not null %}
+            <div class="space-y-3 pt-2">
+                <h3 class="text-xs font-black uppercase tracking-wider text-indigo-700">
+                    Statistiques de Participation ({{ stats.year|default('Année en cours') }})
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Événements Totaux</span>
+                        <span class="text-lg font-black text-slate-800">{{ stats.totalActivitiesCount|default(0) }}</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Présences Effectives</span>
+                        <span class="text-lg font-black text-emerald-600">{{ stats.attendedActivitiesCount|default(0) }}</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Taux de Présence</span>
+                        <span class="text-lg font-black text-indigo-600">{{ stats.participationRate|default(0) }}%</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Arrivées à l'Heure</span>
+                        <span class="text-lg font-black text-blue-600">{{ stats.onTimeCount|default(0) }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-500">
+            <span>Fiche générée le {{ "now"|date("d/m/Y H:i") }}</span>
+            <span class="font-bold uppercase tracking-wider text-indigo-600">Document Officiel Paroissial</span>
+        </div>
+
+    </div>
+
+</body>
+</html>
