@@ -350,45 +350,216 @@
             </div>
         </div>
 
-        <!-- TAB 3: Presence History -->
-        <div id="tab-presence" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-4">
-            <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Historique des Pointages de Présence</h4>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-slate-600">
-                    <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
-                        <tr>
-                            <th class="py-3.5 px-6">ID & Date / Heure</th>
-                            <th class="py-3.5 px-6">Événement / Activité</th>
-                            <th class="py-3.5 px-6">Scanné Par</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {% for p in presences %}
-                            <tr class="hover:bg-slate-50 transition">
-                                <td class="py-4 px-6 text-xs">
-                                    <span class="font-bold text-slate-800">#{{ p.id }}</span>
-                                    <p class="text-slate-400 mt-0.5">{{ p.scannedAt|date('d/m/Y H:i:s') }}</p>
-                                </td>
-                                <td class="py-4 px-6">
-                                    <span class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                                        {{ p.activityName }}
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6 text-xs text-slate-500">
-                                    {% if p.scannedBy %}
-                                        {{ p.scannedBy.prenom }} {{ p.scannedBy.nom }}
-                                    {% else %}
-                                        <span class="italic text-slate-400">Scan Autonome</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
+        <!-- TAB 3: Presence History & Attendance Statistics -->
+        <div id="tab-presence" class="tab-content hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-8">
+
+            <!-- Global KPI Summary Cards -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center justify-between">
+                    <span><i class="fa-solid fa-chart-pie text-indigo-600 mr-2"></i>Statistiques Globales d'Assiduité</span>
+                    <span class="text-xs font-normal text-slate-500 font-sans">Sur {{ totalEventsCount|default(0) }} événement(s) concerné(s)</span>
+                </h4>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <!-- Taux de Présence -->
+                    <div class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 text-center">
+                        <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-1">Taux Présence</p>
+                        <p class="text-2xl font-black text-emerald-700 font-mono">{{ tauxPresence|default(0) }}%</p>
+                        <p class="text-[10px] text-emerald-600 font-medium mt-1">{{ attendedCount|default(0) }}/{{ totalEventsCount|default(0) }} événements</p>
+                    </div>
+
+                    <!-- Taux d'Absence -->
+                    <div class="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 text-center">
+                        <p class="text-[11px] font-bold text-rose-800 uppercase tracking-wider mb-1">Taux Absence</p>
+                        <p class="text-2xl font-black text-rose-700 font-mono">{{ tauxAbsence|default(0) }}%</p>
+                        <p class="text-[10px] text-rose-600 font-medium mt-1">{{ absentCount|default(0) }} absence(s)</p>
+                    </div>
+
+                    <!-- À l'heure -->
+                    <div class="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-4 text-center">
+                        <p class="text-[11px] font-bold text-indigo-800 uppercase tracking-wider mb-1">À l'Heure</p>
+                        <p class="text-2xl font-black text-indigo-700 font-mono">{{ onTimeCount|default(0) }}</p>
+                        <p class="text-[10px] text-indigo-600 font-medium mt-1">Présence ponctuelle</p>
+                    </div>
+
+                    <!-- En Retard -->
+                    <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-center">
+                        <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1">En Retard</p>
+                        <p class="text-2xl font-black text-amber-700 font-mono">{{ lateCount|default(0) }}</p>
+                        <p class="text-[10px] text-amber-600 font-medium mt-1">Arrivée tardive</p>
+                    </div>
+
+                    <!-- Total Présences enregistrées -->
+                    <div class="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 text-center">
+                        <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider mb-1">Pointages</p>
+                        <p class="text-2xl font-black text-blue-700 font-mono">{{ presences|length }}</p>
+                        <p class="text-[10px] text-blue-600 font-medium mt-1">Total scans effectués</p>
+                    </div>
+
+                    <!-- Non Présents (Absences) -->
+                    <div class="bg-slate-100 border border-slate-200 rounded-2xl p-4 text-center">
+                        <p class="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Absents</p>
+                        <p class="text-2xl font-black text-slate-800 font-mono">{{ absentCount|default(0) }}</p>
+                        <p class="text-[10px] text-slate-500 font-medium mt-1">Manqué(s)</p>
+                    </div>
+                </div>
+
+                <!-- Breakdown by Affiliations (Associations & Zone/Groupe) -->
+                {% if assocStats|default([])|length > 0 or groupeStat|default(null) %}
+                    <div class="pt-2">
+                        <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Taux d'Assiduité par Entité d'Appartenance</h5>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            {% for aId, aData in assocStats|default([]) %}
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fa-solid fa-users text-blue-600 mr-1.5"></i> {{ aData.association.nom }}</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">{{ aData.totalEvents }} évén.</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs font-mono">
+                                        <span class="text-emerald-700 font-bold"><i class="fa-solid fa-check mr-1"></i>Présence : {{ aData.presenceRate }}%</span>
+                                        <span class="text-rose-700 font-bold"><i class="fa-solid fa-xmark mr-1"></i>Absence : {{ aData.absenceRate }}%</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500">
+                                        Présent : {{ aData.attended }} | Retards : {{ aData.late }} | Absents : {{ aData.absent }}
+                                    </p>
+                                </div>
+                            {% endfor %}
+
+                            {% if groupeStat|default(null) %}
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fa-solid fa-layer-group text-amber-600 mr-1.5"></i> Zone : {{ groupeStat.groupe.nom }}</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">{{ groupeStat.totalEvents }} évén.</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs font-mono">
+                                        <span class="text-emerald-700 font-bold"><i class="fa-solid fa-check mr-1"></i>Présence : {{ groupeStat.presenceRate }}%</span>
+                                        <span class="text-rose-700 font-bold"><i class="fa-solid fa-xmark mr-1"></i>Absence : {{ groupeStat.absenceRate }}%</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500">
+                                        Présent : {{ groupeStat.attended }} | Retards : {{ groupeStat.late }} | Absents : {{ groupeStat.absent }}
+                                    </p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Table 1: Historique des Pointages Effectués -->
+            <div class="space-y-3">
+                <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2"><i class="fa-solid fa-clock-rotate-left text-indigo-600 mr-2"></i>Historique des Pointages de Présence</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-400 border-b border-slate-200">
                             <tr>
-                                <td colspan="3" class="py-8 text-center text-slate-400">Aucun pointage de présence enregistré pour ce membre.</td>
+                                <th class="py-3 px-4">ID & Date / Heure</th>
+                                <th class="py-3 px-4">Événement / Activité</th>
+                                <th class="py-3 px-4 text-center">Ponctualité / Statut</th>
+                                <th class="py-3 px-4 text-right">Scanné Par</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for log in presenceLogs|default([]) %}
+                                {% set p = log.presence %}
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="py-3 px-4 text-xs">
+                                        <span class="font-bold text-slate-800">#{{ p.id }}</span>
+                                        <p class="text-slate-400 mt-0.5 font-mono">{{ p.scannedAt|date('d/m/Y H:i:s') }}</p>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            {{ p.activityName }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        {% if log.isLate %}
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center">
+                                                <i class="fa-solid fa-clock text-amber-600 mr-1.5"></i> En retard (+{{ log.delayMinutes }} min)
+                                            </span>
+                                        {% else %}
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center">
+                                                <i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Présent (À l'heure)
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-xs text-right text-slate-500">
+                                        {% if p.scannedBy %}
+                                            {{ p.scannedBy.prenom }} {{ p.scannedBy.nom }}
+                                        {% else %}
+                                            <span class="italic text-slate-400">Scan Autonome</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="py-6 text-center text-slate-400 text-xs">Aucun pointage de présence enregistré pour ce membre.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 2: Tableau Synthétique des Événements & Assiduité (Présence, Retard, Absence) -->
+            <div class="space-y-3 pt-4 border-t border-slate-100">
+                <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2"><i class="fa-solid fa-list-check text-indigo-600 mr-2"></i>Tableau Récapitulatif des Événements & Ponctualité</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 font-semibold uppercase text-slate-400 border-b border-slate-200">
+                            <tr>
+                                <th class="py-3 px-4">Événement</th>
+                                <th class="py-3 px-4">Date & Heure Début</th>
+                                <th class="py-3 px-4">Contexte / Entité</th>
+                                <th class="py-3 px-4 text-center">Statut (Présent / Retard / Absent)</th>
+                                <th class="py-3 px-4 text-right">Date / Heure Pointage</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for item in relevantEventsDetails|default([]) %}
+                                {% set evt = item.event %}
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="py-3 px-4 font-bold text-slate-800 text-xs">
+                                        {{ evt.nom }}
+                                    </td>
+                                    <td class="py-3 px-4 font-mono text-slate-500">
+                                        {{ evt.dateDebut ? evt.dateDebut|date('d/m/Y H:i') : 'Date non définie' }}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold
+                                            {% if item.contextType == 'association' %}bg-blue-50 text-blue-700 border border-blue-100
+                                            {% elseif item.contextType == 'groupe' %}bg-amber-50 text-amber-700 border border-amber-100
+                                            {% elseif item.contextType == 'fiangonana' %}bg-emerald-50 text-emerald-700 border border-emerald-100
+                                            {% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                                            {{ item.contextLabel }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        {% if item.status == 'late' %}
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center">
+                                                <i class="fa-solid fa-clock text-amber-600 mr-1"></i> En retard (+{{ item.delayMinutes }} min)
+                                            </span>
+                                        {% elseif item.status == 'present' %}
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center">
+                                                <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Présent (À l'heure)
+                                            </span>
+                                        {% else %}
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center">
+                                                <i class="fa-solid fa-circle-xmark text-rose-600 mr-1"></i> Absent
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-right font-mono text-slate-500">
+                                        {{ item.scannedAt ? item.scannedAt|date('d/m/Y H:i:s') : '-' }}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="py-6 text-center text-slate-400">Aucun événement répertorié pour ce membre.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
