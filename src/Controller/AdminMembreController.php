@@ -253,6 +253,270 @@ class AdminMembreController extends AbstractController
         $roles = $em->getRepository(Role::class)->findAll();
         $presences = $em->getRepository(Presence::class)->findBy(['membre' => $membre], ['scannedAt' => 'DESC']);
 
+        // Retrieve all past or current system events (dateDebut <= now or dateDebut null) for attendance rate calculation
+        $now = new \DateTime();
+        $allEvents = $em->getRepository(\App\Entity\Evenement::class)->findBy([], ['dateDebut' => 'DESC']);
+
+        // Identify member affiliations
+        $memberAssocIds = [];
+        foreach ($membre->getAssociations() as $assoc) {
+            $memberAssocIds[] = $assoc->getId();
+        }
+        $memberGroupeId = $membre->getZoneGeographique()?->getId();
+        $memberFiangonanaId = $membre->getFiangonana()?->getId();
+
+        // Helper function to find best matching event for a presence scan
+        $findBestMatchingEvent = function (Presence $p, array $eventsList): ?\App\Entity\Evenement {
+            if (!$p->getActivityName()) {
+                return null;
+            }
+
+            $candidates = [];
+            foreach ($eventsList as $e) {
+                if ($e->getNom() === $p->getActivityName()) {
+                    $candidates[] = $e;
+                }
+            }
+
+            if (empty($candidates)) {
+                return null;
+            }
+
+            if (count($candidates) === 1) {
+                return $candidates[0];
+            }
+
+            // Find closest candidate by dateDebut to scan timestamp
+            $scanTs = $p->getScannedAt()?->getTimestamp() ?? 0;
+            $bestCandidate = null;
+            $minDiff = PHP_INT_MAX;
+
+            foreach ($candidates as $cand) {
+                $candTs = $cand->getDateDebut()?->getTimestamp() ?? 0;
+                $diff = abs($scanTs - $candTs);
+                if ($diff < $minDiff) {
+                    $minDiff = $diff;
+                    $bestCandidate = $cand;
+                }
+            }
+
+            return $bestCandidate;
+        };
+
+        // Helper function to find matching presence for an event
+        $findPresenceForEvent = function (\App\Entity\Evenement $e, array $presenceList): ?Presence {
+            $candidates = [];
+            foreach ($presenceList as $p) {
+                if ($p->getActivityName() === $e->getNom()) {
+                    $candidates[] = $p;
+                }
+            }
+
+            if (empty($candidates)) {
+                return null;
+            }
+
+            if (count($candidates) === 1) {
+                return $candidates[0];
+            }
+
+            $evtTs = $e->getDateDebut()?->getTimestamp() ?? 0;
+            $bestPresence = null;
+            $minDiff = PHP_INT_MAX;
+
+            foreach ($candidates as $cand) {
+                $scanTs = $cand->getScannedAt()?->getTimestamp() ?? 0;
+                $diff = abs($scanTs - $evtTs);
+                if ($diff < $minDiff) {
+                    $minDiff = $diff;
+                    $bestPresence = $cand;
+                }
+            }
+
+            return $bestPresence;
+        };
+
+        // Enriched pointage logs for Presence History table
+        $presenceLogs = [];
+        foreach ($presences as $p) {
+            $isLate = false;
+            $delayMinutes = 0;
+
+            $matchedEvent = $findBestMatchingEvent($p, $allEvents);
+
+            if ($matchedEvent && $matchedEvent->getDateDebut() && $p->getScannedAt()) {
+                $startTs = $matchedEvent->getDateDebut()->getTimestamp();
+                $scanTs = $p->getScannedAt()->getTimestamp();
+                if ($scanTs > $startTs) {
+                    $isLate = true;
+                    $delayMinutes = (int) ceil(($scanTs - $startTs) / 60);
+                }
+            }
+
+            $presenceLogs[] = [
+                'presence' => $p,
+                'event' => $matchedEvent,
+                'isLate' => $isLate,
+                'delayMinutes' => $delayMinutes,
+                'status' => $isLate ? 'late' : 'present',
+            ];
+        }
+
+        // Process relevant events for presence & absence rates (Associations & Groups)
+        $relevantEventsDetails = [];
+        $totalEventsCount = 0;
+        $attendedCount = 0;
+        $lateCount = 0;
+        $onTimeCount = 0;
+        $absentCount = 0;
+
+        // Breakdown stats by Association and Groupe
+        $assocStats = [];
+        foreach ($membre->getAssociations() as $a) {
+            $assocStats[$a->getId()] = [
+                'association' => $a,
+                'totalEvents' => 0,
+                'attended' => 0,
+                'late' => 0,
+                'absent' => 0,
+                'presenceRate' => 0.0,
+                'absenceRate' => 0.0,
+            ];
+        }
+
+        $groupeStat = null;
+        if ($membre->getZoneGeographique()) {
+            $groupeStat = [
+                'groupe' => $membre->getZoneGeographique(),
+                'totalEvents' => 0,
+                'attended' => 0,
+                'late' => 0,
+                'absent' => 0,
+                'presenceRate' => 0.0,
+                'absenceRate' => 0.0,
+            ];
+        }
+
+        foreach ($allEvents as $e) {
+            // Exclude future events from absence statistics
+            if ($e->getDateDebut() && $e->getDateDebut() > $now) {
+                continue;
+            }
+
+            $isRelevant = false;
+            $contextType = 'global';
+            $contextLabel = 'Événement Général';
+            $assocObj = null;
+
+            if ($e->getAssociation() && in_array($e->getAssociation()->getId(), $memberAssocIds, true)) {
+                $isRelevant = true;
+                $contextType = 'association';
+                $assocObj = $e->getAssociation();
+                $contextLabel = 'Assoc: ' . $assocObj->getNom();
+            } elseif ($e->getGroupe() && $memberGroupeId && $e->getGroupe()->getId() === $memberGroupeId) {
+                $isRelevant = true;
+                $contextType = 'groupe';
+                $contextLabel = 'Zone/Groupe: ' . $e->getGroupe()->getNom();
+            } elseif ($e->getFiangonana() && $memberFiangonanaId && $e->getFiangonana()->getId() === $memberFiangonanaId) {
+                $isRelevant = true;
+                $contextType = 'fiangonana';
+                $contextLabel = 'Paroisse: ' . $e->getFiangonana()->getNom();
+            } elseif (!$e->getAssociation() && !$e->getGroupe() && !$e->getFiangonana()) {
+                $isRelevant = true;
+                $contextType = 'global';
+                $contextLabel = 'Général';
+            } else {
+                // Check if member explicitly attended this event
+                $pCheck = $findPresenceForEvent($e, $presences);
+                if ($pCheck) {
+                    $isRelevant = true;
+                    $contextType = 'autre';
+                    $contextLabel = 'Autre';
+                }
+            }
+
+            if (!$isRelevant) {
+                continue;
+            }
+
+            $totalEventsCount++;
+            $p = $findPresenceForEvent($e, $presences);
+            $isLate = false;
+            $delayMinutes = 0;
+            $status = 'absent';
+
+            if ($p) {
+                $status = 'present';
+                $attendedCount++;
+                if ($e->getDateDebut() && $p->getScannedAt()) {
+                    $startTs = $e->getDateDebut()->getTimestamp();
+                    $scanTs = $p->getScannedAt()->getTimestamp();
+                    if ($scanTs > $startTs) {
+                        $isLate = true;
+                        $delayMinutes = (int) ceil(($scanTs - $startTs) / 60);
+                        $status = 'late';
+                        $lateCount++;
+                    } else {
+                        $onTimeCount++;
+                    }
+                } else {
+                    $onTimeCount++;
+                }
+            } else {
+                $absentCount++;
+            }
+
+            // Update breakdown stats
+            if ($contextType === 'association' && $assocObj && isset($assocStats[$assocObj->getId()])) {
+                $assocStats[$assocObj->getId()]['totalEvents']++;
+                if ($p) {
+                    $assocStats[$assocObj->getId()]['attended']++;
+                    if ($isLate) {
+                        $assocStats[$assocObj->getId()]['late']++;
+                    }
+                } else {
+                    $assocStats[$assocObj->getId()]['absent']++;
+                }
+            } elseif ($contextType === 'groupe' && $groupeStat) {
+                $groupeStat['totalEvents']++;
+                if ($p) {
+                    $groupeStat['attended']++;
+                    if ($isLate) {
+                        $groupeStat['late']++;
+                    }
+                } else {
+                    $groupeStat['absent']++;
+                }
+            }
+
+            $relevantEventsDetails[] = [
+                'event' => $e,
+                'contextType' => $contextType,
+                'contextLabel' => $contextLabel,
+                'status' => $status,
+                'isLate' => $isLate,
+                'delayMinutes' => $delayMinutes,
+                'scannedAt' => $p?->getScannedAt(),
+            ];
+        }
+
+        // Compute percentage rates
+        $tauxPresence = $totalEventsCount > 0 ? round(($attendedCount / $totalEventsCount) * 100, 1) : 0.0;
+        $tauxAbsence = $totalEventsCount > 0 ? round(($absentCount / $totalEventsCount) * 100, 1) : 0.0;
+
+        foreach ($assocStats as $aId => &$aStat) {
+            $tot = $aStat['totalEvents'];
+            $aStat['presenceRate'] = $tot > 0 ? round(($aStat['attended'] / $tot) * 100, 1) : 0.0;
+            $aStat['absenceRate'] = $tot > 0 ? round(($aStat['absent'] / $tot) * 100, 1) : 0.0;
+        }
+        unset($aStat);
+
+        if ($groupeStat) {
+            $tot = $groupeStat['totalEvents'];
+            $groupeStat['presenceRate'] = $tot > 0 ? round(($groupeStat['attended'] / $tot) * 100, 1) : 0.0;
+            $groupeStat['absenceRate'] = $tot > 0 ? round(($groupeStat['absent'] / $tot) * 100, 1) : 0.0;
+        }
+
         // Fetch cotisations and dons
         $year = (int)date('Y');
         $cotisations = $em->getRepository(\App\Entity\Cotisation::class)->findBy(['membre' => $membre, 'annee' => $year], ['paidAt' => 'DESC']);
@@ -385,6 +649,17 @@ class AdminMembreController extends AbstractController
             'associations' => $associations,
             'roles' => $roles,
             'presences' => $presences,
+            'presenceLogs' => $presenceLogs,
+            'relevantEventsDetails' => $relevantEventsDetails,
+            'totalEventsCount' => $totalEventsCount,
+            'attendedCount' => $attendedCount,
+            'onTimeCount' => $onTimeCount,
+            'lateCount' => $lateCount,
+            'absentCount' => $absentCount,
+            'tauxPresence' => $tauxPresence,
+            'tauxAbsence' => $tauxAbsence,
+            'assocStats' => $assocStats,
+            'groupeStat' => $groupeStat,
             'cotisations' => $cotisations,
             'cotisationMatrices' => $cotisationMatrices,
             'dons' => $dons,
