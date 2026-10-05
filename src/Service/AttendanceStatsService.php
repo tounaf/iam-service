@@ -100,23 +100,74 @@ class AttendanceStatsService
         $memberGroupeId = $membre->getZoneGeographique()?->getId();
         $memberFiangonanaId = $membre->getFiangonana()?->getId();
 
+        $assocStats = [];
+        foreach ($membre->getAssociations() as $a) {
+            $assocStats[$a->getId()] = [
+                'id' => $a->getId(),
+                'nom' => $a->getNom(),
+                'totalEvents' => 0,
+                'attended' => 0,
+                'late' => 0,
+                'absent' => 0,
+                'presenceRate' => 0.0,
+                'absenceRate' => 0.0,
+            ];
+        }
+
+        $groupeStat = null;
+        if ($membre->getZoneGeographique()) {
+            $g = $membre->getZoneGeographique();
+            $groupeStat = [
+                'id' => $g->getId(),
+                'nom' => $g->getNom(),
+                'totalEvents' => 0,
+                'attended' => 0,
+                'late' => 0,
+                'absent' => 0,
+                'presenceRate' => 0.0,
+                'absenceRate' => 0.0,
+            ];
+        }
+
+        $fiangonanaStat = null;
+        if ($membre->getFiangonana()) {
+            $f = $membre->getFiangonana();
+            $fiangonanaStat = [
+                'id' => $f->getId(),
+                'nom' => $f->getNom(),
+                'totalEvents' => 0,
+                'attended' => 0,
+                'late' => 0,
+                'absent' => 0,
+                'presenceRate' => 0.0,
+                'absenceRate' => 0.0,
+            ];
+        }
+
         $eventsMap = [];
         $relevantActivitiesForMember = [];
+        $now = new \DateTime();
 
         foreach ($events as $evt) {
             $isRelevant = false;
+            $contextType = 'global';
+            $assocId = null;
 
             if ($evt->getAssociation()) {
                 if (in_array($evt->getAssociation()->getId(), $memberAssocIds, true)) {
                     $isRelevant = true;
+                    $contextType = 'association';
+                    $assocId = $evt->getAssociation()->getId();
                 }
             } elseif ($evt->getGroupe()) {
                 if ($memberGroupeId && $evt->getGroupe()->getId() === $memberGroupeId) {
                     $isRelevant = true;
+                    $contextType = 'groupe';
                 }
             } elseif ($evt->getFiangonana()) {
                 if ($memberFiangonanaId && $evt->getFiangonana()->getId() === $memberFiangonanaId) {
                     $isRelevant = true;
+                    $contextType = 'fiangonana';
                 }
             } else {
                 $isRelevant = true;
@@ -125,13 +176,78 @@ class AttendanceStatsService
             if ($isRelevant && $evt->getNom()) {
                 $eventsMap[$evt->getNom()] = $evt;
                 $relevantActivitiesForMember[] = $evt->getNom();
+
+                if (!$evt->getDateDebut() || $evt->getDateDebut() <= $now) {
+                    $pMatch = null;
+                    foreach ($presences as $p) {
+                        if ($p->getActivityName() === $evt->getNom()) {
+                            $pMatch = $p;
+                            break;
+                        }
+                    }
+
+                    $isLateEvt = false;
+                    if ($pMatch && $evt->getDateDebut() && $pMatch->getScannedAt()) {
+                        if ($pMatch->getScannedAt()->getTimestamp() > $evt->getDateDebut()->getTimestamp()) {
+                            $isLateEvt = true;
+                        }
+                    }
+
+                    if ($contextType === 'association' && $assocId && isset($assocStats[$assocId])) {
+                        $assocStats[$assocId]['totalEvents']++;
+                        if ($pMatch) {
+                            $assocStats[$assocId]['attended']++;
+                            if ($isLateEvt) {
+                                $assocStats[$assocId]['late']++;
+                            }
+                        } else {
+                            $assocStats[$assocId]['absent']++;
+                        }
+                    } elseif ($contextType === 'groupe' && $groupeStat) {
+                        $groupeStat['totalEvents']++;
+                        if ($pMatch) {
+                            $groupeStat['attended']++;
+                            if ($isLateEvt) {
+                                $groupeStat['late']++;
+                            }
+                        } else {
+                            $groupeStat['absent']++;
+                        }
+                    } elseif ($contextType === 'fiangonana' && $fiangonanaStat) {
+                        $fiangonanaStat['totalEvents']++;
+                        if ($pMatch) {
+                            $fiangonanaStat['attended']++;
+                            if ($isLateEvt) {
+                                $fiangonanaStat['late']++;
+                            }
+                        } else {
+                            $fiangonanaStat['absent']++;
+                        }
+                    }
+                }
             }
         }
 
-        // If entity-filtered events exist for this year, use them as the reference for total activities count
-        if (!empty($relevantActivitiesForMember)) {
-            $allActivities = array_unique($relevantActivitiesForMember);
+        foreach ($assocStats as &$aStat) {
+            $tot = $aStat['totalEvents'];
+            $aStat['presenceRate'] = $tot > 0 ? round(($aStat['attended'] / $tot) * 100, 1) : 0.0;
+            $aStat['absenceRate'] = $tot > 0 ? round(($aStat['absent'] / $tot) * 100, 1) : 0.0;
         }
+        unset($aStat);
+
+        if ($groupeStat) {
+            $tot = $groupeStat['totalEvents'];
+            $groupeStat['presenceRate'] = $tot > 0 ? round(($groupeStat['attended'] / $tot) * 100, 1) : 0.0;
+            $groupeStat['absenceRate'] = $tot > 0 ? round(($groupeStat['absent'] / $tot) * 100, 1) : 0.0;
+        }
+
+        if ($fiangonanaStat) {
+            $tot = $fiangonanaStat['totalEvents'];
+            $fiangonanaStat['presenceRate'] = $tot > 0 ? round(($fiangonanaStat['attended'] / $tot) * 100, 1) : 0.0;
+            $fiangonanaStat['absenceRate'] = $tot > 0 ? round(($fiangonanaStat['absent'] / $tot) * 100, 1) : 0.0;
+        }
+
+        $allActivities = array_unique($relevantActivitiesForMember);
 
         $presenceDetails = [];
         $lateCount = 0;
@@ -194,7 +310,12 @@ class AttendanceStatsService
             'onTimeRate' => $onTimeRate,
             'allActivitiesInYear' => array_values($allActivities),
             'attendedActivitiesInYear' => array_values($memberActivities),
-            'presenceLogs' => $presenceDetails
+            'presenceLogs' => $presenceDetails,
+            'entityStats' => [
+                'associations' => array_values($assocStats),
+                'groupe' => $groupeStat,
+                'fiangonana' => $fiangonanaStat,
+            ],
         ];
     }
 }

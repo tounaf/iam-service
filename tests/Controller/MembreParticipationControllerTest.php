@@ -100,5 +100,10 @@ class MembreParticipationControllerTest extends TestCase
         $this->assertEquals(100.0, $data['lateRate']);
         $this->assertTrue($data['presenceLogs'][0]['isLate']);
         $this->assertEquals(15, $data['presenceLogs'][0]['delayMinutes']);
+
+        $this->assertArrayHasKey('entityStats', $data);
+        $this->assertArrayHasKey('associations', $data['entityStats']);
+        $this->assertArrayHasKey('groupe', $data['entityStats']);
+        $this->assertArrayHasKey('fiangonana', $data['entityStats']);
     }
 }
