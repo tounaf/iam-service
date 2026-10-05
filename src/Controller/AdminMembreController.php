@@ -370,7 +370,7 @@ class AdminMembreController extends AbstractController
         $onTimeCount = 0;
         $absentCount = 0;
 
-        // Breakdown stats by Association and Groupe
+        // Breakdown stats by Association, Groupe, and Fiangonana
         $assocStats = [];
         foreach ($membre->getAssociations() as $a) {
             $assocStats[$a->getId()] = [
@@ -397,6 +397,19 @@ class AdminMembreController extends AbstractController
             ];
         }
 
+        $fiangonanaStat = null;
+        if ($membre->getFiangonana()) {
+            $fiangonanaStat = [
+                'fiangonana' => $membre->getFiangonana(),
+                'totalEvents' => 0,
+                'attended' => 0,
+                'late' => 0,
+                'absent' => 0,
+                'presenceRate' => 0.0,
+                'absenceRate' => 0.0,
+            ];
+        }
+
         foreach ($allEvents as $e) {
             // Exclude future events from absence statistics
             if ($e->getDateDebut() && $e->getDateDebut() > $now) {
@@ -408,31 +421,34 @@ class AdminMembreController extends AbstractController
             $contextLabel = 'Événement Général';
             $assocObj = null;
 
-            if ($e->getAssociation() && in_array($e->getAssociation()->getId(), $memberAssocIds, true)) {
-                $isRelevant = true;
-                $contextType = 'association';
-                $assocObj = $e->getAssociation();
-                $contextLabel = 'Assoc: ' . $assocObj->getNom();
-            } elseif ($e->getGroupe() && $memberGroupeId && $e->getGroupe()->getId() === $memberGroupeId) {
-                $isRelevant = true;
-                $contextType = 'groupe';
-                $contextLabel = 'Zone/Groupe: ' . $e->getGroupe()->getNom();
-            } elseif ($e->getFiangonana() && $memberFiangonanaId && $e->getFiangonana()->getId() === $memberFiangonanaId) {
-                $isRelevant = true;
-                $contextType = 'fiangonana';
-                $contextLabel = 'Paroisse: ' . $e->getFiangonana()->getNom();
-            } elseif (!$e->getAssociation() && !$e->getGroupe() && !$e->getFiangonana()) {
+            // Strict filtering by entity belonging:
+            // 1. If event belongs to an association, it is ONLY relevant if member belongs to that association.
+            // 2. Otherwise if event belongs to a groupe, it is ONLY relevant if member belongs to that groupe.
+            // 3. Otherwise if event belongs to a fiangonana, it is ONLY relevant if member belongs to that fiangonana.
+            // 4. Otherwise if event has no association, groupe, or fiangonana, it is a general event for everyone.
+            if ($e->getAssociation()) {
+                if (in_array($e->getAssociation()->getId(), $memberAssocIds, true)) {
+                    $isRelevant = true;
+                    $contextType = 'association';
+                    $assocObj = $e->getAssociation();
+                    $contextLabel = 'Assoc: ' . $assocObj->getNom();
+                }
+            } elseif ($e->getGroupe()) {
+                if ($memberGroupeId && $e->getGroupe()->getId() === $memberGroupeId) {
+                    $isRelevant = true;
+                    $contextType = 'groupe';
+                    $contextLabel = 'Zone/Groupe: ' . $e->getGroupe()->getNom();
+                }
+            } elseif ($e->getFiangonana()) {
+                if ($memberFiangonanaId && $e->getFiangonana()->getId() === $memberFiangonanaId) {
+                    $isRelevant = true;
+                    $contextType = 'fiangonana';
+                    $contextLabel = 'Paroisse: ' . $e->getFiangonana()->getNom();
+                }
+            } else {
                 $isRelevant = true;
                 $contextType = 'global';
                 $contextLabel = 'Général';
-            } else {
-                // Check if member explicitly attended this event
-                $pCheck = $findPresenceForEvent($e, $presences);
-                if ($pCheck) {
-                    $isRelevant = true;
-                    $contextType = 'autre';
-                    $contextLabel = 'Autre';
-                }
             }
 
             if (!$isRelevant) {
@@ -487,6 +503,16 @@ class AdminMembreController extends AbstractController
                 } else {
                     $groupeStat['absent']++;
                 }
+            } elseif ($contextType === 'fiangonana' && $fiangonanaStat) {
+                $fiangonanaStat['totalEvents']++;
+                if ($p) {
+                    $fiangonanaStat['attended']++;
+                    if ($isLate) {
+                        $fiangonanaStat['late']++;
+                    }
+                } else {
+                    $fiangonanaStat['absent']++;
+                }
             }
 
             $relevantEventsDetails[] = [
@@ -515,6 +541,12 @@ class AdminMembreController extends AbstractController
             $tot = $groupeStat['totalEvents'];
             $groupeStat['presenceRate'] = $tot > 0 ? round(($groupeStat['attended'] / $tot) * 100, 1) : 0.0;
             $groupeStat['absenceRate'] = $tot > 0 ? round(($groupeStat['absent'] / $tot) * 100, 1) : 0.0;
+        }
+
+        if ($fiangonanaStat) {
+            $tot = $fiangonanaStat['totalEvents'];
+            $fiangonanaStat['presenceRate'] = $tot > 0 ? round(($fiangonanaStat['attended'] / $tot) * 100, 1) : 0.0;
+            $fiangonanaStat['absenceRate'] = $tot > 0 ? round(($fiangonanaStat['absent'] / $tot) * 100, 1) : 0.0;
         }
 
         // Fetch cotisations and dons
@@ -660,6 +692,7 @@ class AdminMembreController extends AbstractController
             'tauxAbsence' => $tauxAbsence,
             'assocStats' => $assocStats,
             'groupeStat' => $groupeStat,
+            'fiangonanaStat' => $fiangonanaStat,
             'cotisations' => $cotisations,
             'cotisationMatrices' => $cotisationMatrices,
             'dons' => $dons,

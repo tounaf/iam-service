@@ -369,4 +369,98 @@ class AdminMembreControllerTest extends TestCase
         $this->assertInstanceOf(RedirectResponse::class, $response);
         $this->assertNull($membre->getPassword());
     }
+
+    public function testEditStatisticsFiltersOutNonMemberAssociationsAndSeparatesStats(): void
+    {
+        $assocA = new Association();
+        $assocA->setNom('KTM');
+        $refPropA = new \ReflectionProperty(Association::class, 'id');
+        $refPropA->setAccessible(true);
+        $refPropA->setValue($assocA, 101);
+
+        $assocB = new Association();
+        $assocB->setNom('Chorale');
+        $refPropB = new \ReflectionProperty(Association::class, 'id');
+        $refPropB->setAccessible(true);
+        $refPropB->setValue($assocB, 102);
+
+        $membre = new Membre();
+        $membre->setNom('Andria');
+        $membre->setPrenom('Lova');
+        $membre->addAssociation($assocA); // Member is in Assoc A only
+
+        $evt1 = new \App\Entity\Evenement();
+        $evt1->setNom('Réunion KTM');
+        $evt1->setDateDebut(new \DateTime('2026-01-10 10:00:00'));
+        $evt1->setAssociation($assocA);
+
+        $evt2 = new \App\Entity\Evenement();
+        $evt2->setNom('Répétition Chorale');
+        $evt2->setDateDebut(new \DateTime('2026-01-12 14:00:00'));
+        $evt2->setAssociation($assocB); // Assoc B (Member is NOT in Assoc B)
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $membreRepo = $this->createMock(EntityRepository::class);
+        $groupeRepo = $this->createMock(EntityRepository::class);
+        $fiangonanaRepo = $this->createMock(EntityRepository::class);
+        $assocRepo = $this->createMock(EntityRepository::class);
+        $roleRepo = $this->createMock(EntityRepository::class);
+        $presenceRepo = $this->createMock(EntityRepository::class);
+        $evtRepo = $this->createMock(EntityRepository::class);
+        $cotisationRepo = $this->createMock(EntityRepository::class);
+        $donRepo = $this->createMock(EntityRepository::class);
+
+        $membreRepo->method('find')->with(1)->willReturn($membre);
+        $groupeRepo->method('findAll')->willReturn([]);
+        $fiangonanaRepo->method('findAll')->willReturn([]);
+        $assocRepo->method('findAll')->willReturn([$assocA, $assocB]);
+        $roleRepo->method('findAll')->willReturn([]);
+        $presenceRepo->method('findBy')->willReturn([]);
+        $evtRepo->method('findBy')->willReturn([$evt1, $evt2]);
+        $cotisationRepo->method('findBy')->willReturn([]);
+        $donRepo->method('findBy')->willReturn([]);
+
+        $em->method('getRepository')->willReturnCallback(function ($entityClass) use (
+            $membreRepo, $groupeRepo, $fiangonanaRepo, $assocRepo, $roleRepo, $presenceRepo, $evtRepo, $cotisationRepo, $donRepo
+        ) {
+            return match ($entityClass) {
+                Membre::class => $membreRepo,
+                Groupe::class => $groupeRepo,
+                Fiangonana::class => $fiangonanaRepo,
+                Association::class => $assocRepo,
+                Role::class => $roleRepo,
+                \App\Entity\Presence::class => $presenceRepo,
+                \App\Entity\Evenement::class => $evtRepo,
+                \App\Entity\Cotisation::class => $cotisationRepo,
+                \App\Entity\Don::class => $donRepo,
+                default => null,
+            };
+        });
+
+        $capturedParams = [];
+        $controller = new class($capturedParams) extends AdminMembreController {
+            public function __construct(public array &$capturedParams) {}
+            public function render(string $view, array $parameters = [], ?\Symfony\Component\HttpFoundation\Response $response = null): \Symfony\Component\HttpFoundation\Response {
+                $this->capturedParams = $parameters;
+                return new \Symfony\Component\HttpFoundation\Response('OK');
+            }
+        };
+
+        $request = Request::create('/admin/membres/1/editer', 'GET');
+        $response = $controller->edit(1, $request, $em);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        // Only Event 1 (Assoc A) should be counted in total events
+        $this->assertEquals(1, $capturedParams['totalEventsCount']);
+        // 1 absence for Assoc A event since member has no presence
+        $this->assertEquals(1, $capturedParams['absentCount']);
+        $this->assertEquals(0.0, $capturedParams['tauxPresence']);
+        $this->assertEquals(100.0, $capturedParams['tauxAbsence']);
+
+        // Assoc A stats present in breakdown, Assoc B not present in member's assocStats
+        $this->assertArrayHasKey(101, $capturedParams['assocStats']);
+        $this->assertArrayNotHasKey(102, $capturedParams['assocStats']);
+        $this->assertEquals(1, $capturedParams['assocStats'][101]['totalEvents']);
+        $this->assertEquals(1, $capturedParams['assocStats'][101]['absent']);
+    }
 }

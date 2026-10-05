@@ -86,18 +86,51 @@ class AttendanceStatsService
             ->getQuery()
             ->getResult();
 
-        // Load events to check event start times
+        // Load events to check event start times and relevance to member
         $events = $this->entityManager->getRepository(Evenement::class)->createQueryBuilder('e')
             ->where('e.createdAt >= :startDate OR e.dateDebut >= :startDate')
             ->setParameter('startDate', $startDate)
             ->getQuery()
             ->getResult();
 
+        $memberAssocIds = [];
+        foreach ($membre->getAssociations() as $assoc) {
+            $memberAssocIds[] = $assoc->getId();
+        }
+        $memberGroupeId = $membre->getZoneGeographique()?->getId();
+        $memberFiangonanaId = $membre->getFiangonana()?->getId();
+
         $eventsMap = [];
+        $relevantActivitiesForMember = [];
+
         foreach ($events as $evt) {
-            if ($evt->getNom()) {
-                $eventsMap[$evt->getNom()] = $evt;
+            $isRelevant = false;
+
+            if ($evt->getAssociation()) {
+                if (in_array($evt->getAssociation()->getId(), $memberAssocIds, true)) {
+                    $isRelevant = true;
+                }
+            } elseif ($evt->getGroupe()) {
+                if ($memberGroupeId && $evt->getGroupe()->getId() === $memberGroupeId) {
+                    $isRelevant = true;
+                }
+            } elseif ($evt->getFiangonana()) {
+                if ($memberFiangonanaId && $evt->getFiangonana()->getId() === $memberFiangonanaId) {
+                    $isRelevant = true;
+                }
+            } else {
+                $isRelevant = true;
             }
+
+            if ($isRelevant && $evt->getNom()) {
+                $eventsMap[$evt->getNom()] = $evt;
+                $relevantActivitiesForMember[] = $evt->getNom();
+            }
+        }
+
+        // If entity-filtered events exist for this year, use them as the reference for total activities count
+        if (!empty($relevantActivitiesForMember)) {
+            $allActivities = array_unique($relevantActivitiesForMember);
         }
 
         $presenceDetails = [];
