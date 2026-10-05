@@ -367,6 +367,87 @@ export function EventsView({ memberId, member }) {
         </div>
       </div>
 
+      {/* Entity Breakdown Stats Section */}
+      {stats && stats.entityStats && (
+        (stats.entityStats.associations && stats.entityStats.associations.length > 0) ||
+        stats.entityStats.groupe ||
+        stats.entityStats.fiangonana
+      ) && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
+              <i className="fa-solid fa-chart-pie text-indigo-500 mr-2"></i>
+              Taux d'Assiduité par Entité d'Appartenance
+            </h3>
+            <span className="text-[11px] text-slate-400 italic">
+              Uniquement les événements des entités auxquelles appartient le membre
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+            {stats.entityStats.associations && stats.entityStats.associations.map((aData) => (
+              <div key={aData.id} className="bg-blue-50/40 p-4 rounded-2xl border border-blue-100 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 flex items-center">
+                    <i className="fa-solid fa-users text-blue-600 mr-1.5"></i> {aData.nom}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                    {aData.totalEvents} évén.
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-emerald-700 font-bold"><i className="fa-solid fa-check mr-1"></i>Présence : {aData.presenceRate}%</span>
+                  <span className="text-rose-700 font-bold"><i className="fa-solid fa-xmark mr-1"></i>Absence : {aData.absenceRate}%</span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Présent : {aData.attended} | Retards : {aData.late} | Absents : {aData.absent}
+                </p>
+              </div>
+            ))}
+
+            {stats.entityStats.groupe && (
+              <div className="bg-amber-50/40 p-4 rounded-2xl border border-amber-100 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 flex items-center">
+                    <i className="fa-solid fa-layer-group text-amber-600 mr-1.5"></i> Zone : {stats.entityStats.groupe.nom}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                    {stats.entityStats.groupe.totalEvents} évén.
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-emerald-700 font-bold"><i className="fa-solid fa-check mr-1"></i>Présence : {stats.entityStats.groupe.presenceRate}%</span>
+                  <span className="text-rose-700 font-bold"><i className="fa-solid fa-xmark mr-1"></i>Absence : {stats.entityStats.groupe.absenceRate}%</span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Présent : {stats.entityStats.groupe.attended} | Retards : {stats.entityStats.groupe.late} | Absents : {stats.entityStats.groupe.absent}
+                </p>
+              </div>
+            )}
+
+            {stats.entityStats.fiangonana && (
+              <div className="bg-emerald-50/40 p-4 rounded-2xl border border-emerald-100 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 flex items-center">
+                    <i className="fa-solid fa-church text-emerald-600 mr-1.5"></i> Paroisse : {stats.entityStats.fiangonana.nom}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    {stats.entityStats.fiangonana.totalEvents} évén.
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-emerald-700 font-bold"><i className="fa-solid fa-check mr-1"></i>Présence : {stats.entityStats.fiangonana.presenceRate}%</span>
+                  <span className="text-rose-700 font-bold"><i className="fa-solid fa-xmark mr-1"></i>Absence : {stats.entityStats.fiangonana.absenceRate}%</span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Présent : {stats.entityStats.fiangonana.attended} | Retards : {stats.entityStats.fiangonana.late} | Absents : {stats.entityStats.fiangonana.absent}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Filter Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
