@@ -74,6 +74,7 @@ class AdminMembreController extends AbstractController
             $prenom = trim($request->request->get('prenom', ''));
             $email = trim($request->request->get('email', ''));
             $telephone = trim($request->request->get('telephone', ''));
+            $sexe = trim($request->request->get('sexe', ''));
             $dateNaissanceStr = trim($request->request->get('dateNaissance', ''));
             $photoUrl = trim($request->request->get('photoUrl', ''));
             $groupeId = $request->request->get('groupe_id');
@@ -85,6 +86,7 @@ class AdminMembreController extends AbstractController
             $membre->setPrenom($prenom);
             $membre->setEmail($email ?: null);
             $membre->setTelephone($telephone ?: null);
+            $membre->setSexe($sexe ?: null);
             $membre->setDateNaissance($dateNaissanceStr ? new \DateTime($dateNaissanceStr) : null);
             $membre->setPhotoUrl($photoUrl ?: null);
 
@@ -215,6 +217,7 @@ class AdminMembreController extends AbstractController
                 $prenom = trim($request->request->get('prenom', ''));
                 $email = trim($request->request->get('email', ''));
                 $telephone = trim($request->request->get('telephone', ''));
+                $sexe = trim($request->request->get('sexe', ''));
                 $dateNaissanceStr = trim($request->request->get('dateNaissance', ''));
                 $photoUrl = trim($request->request->get('photoUrl', ''));
                 $groupeId = $request->request->get('groupe_id');
@@ -224,6 +227,7 @@ class AdminMembreController extends AbstractController
                 $membre->setPrenom($prenom);
                 $membre->setEmail($email ?: null);
                 $membre->setTelephone($telephone ?: null);
+                $membre->setSexe($sexe ?: null);
                 $membre->setDateNaissance($dateNaissanceStr ? new \DateTime($dateNaissanceStr) : null);
                 $membre->setPhotoUrl($photoUrl ?: null);
 

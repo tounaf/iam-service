@@ -23,6 +23,12 @@
                     <div class="flex items-center space-x-3">
                         <h2 class="text-2xl font-extrabold text-slate-800">{{ membre.prenom }} {{ membre.nom }}</h2>
                         <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">ID #{{ membre.id }}</span>
+                        {% if membre.sexe %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold {% if membre.sexe == 'M' %}bg-blue-50 text-blue-700 border border-blue-100{% elseif membre.sexe == 'F' %}bg-pink-50 text-pink-700 border border-pink-100{% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                                <i class="fa-solid {% if membre.sexe == 'M' %}fa-mars{% elseif membre.sexe == 'F' %}fa-venus{% else %}fa-genderless{% endif %} mr-1"></i>
+                                {% if membre.sexe == 'M' %}Homme{% elseif membre.sexe == 'F' %}Femme{% else %}{{ membre.sexe }}{% endif %}
+                            </span>
+                        {% endif %}
                         {% if membre.age is not null %}
                             <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">{{ membre.age }} ans</span>
                         {% endif %}
@@ -87,7 +93,15 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-5">
+                <div>
+                    <label for="sexe" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Sexe</label>
+                    <select id="sexe" name="sexe" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm bg-white">
+                        <option value="">-- Non spécifié --</option>
+                        <option value="M" {% if membre and membre.sexe == 'M' %}selected{% endif %}>Homme (M)</option>
+                        <option value="F" {% if membre and membre.sexe == 'F' %}selected{% endif %}>Femme (F)</option>
+                    </select>
+                </div>
                 <div>
                     <label for="email" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Adresse Email *</label>
                     <input type="email" id="email" name="email" value="{{ membre ? membre.email : '' }}" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm">
