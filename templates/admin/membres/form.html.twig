@@ -404,13 +404,16 @@
                     </div>
                 </div>
 
-                <!-- Breakdown by Affiliations (Associations & Zone/Groupe) -->
-                {% if assocStats|default([])|length > 0 or groupeStat|default(null) %}
+                <!-- Breakdown by Affiliations (Associations, Zone/Groupe, Paroisse) -->
+                {% if assocStats|default([])|length > 0 or groupeStat|default(null) or fiangonanaStat|default(null) %}
                     <div class="pt-2">
-                        <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Taux d'Assiduité par Entité d'Appartenance</h5>
+                        <div class="flex items-center justify-between mb-3">
+                            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Taux d'Assiduité par Entité d'Appartenance</h5>
+                            <span class="text-[11px] text-slate-400 italic">Uniquement les événements des entités auxquelles appartient le membre</span>
+                        </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             {% for aId, aData in assocStats|default([]) %}
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-100 space-y-2 shadow-sm">
                                     <div class="flex items-center justify-between">
                                         <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fa-solid fa-users text-blue-600 mr-1.5"></i> {{ aData.association.nom }}</span>
                                         <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">{{ aData.totalEvents }} évén.</span>
@@ -426,7 +429,7 @@
                             {% endfor %}
 
                             {% if groupeStat|default(null) %}
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                <div class="bg-amber-50/40 p-4 rounded-xl border border-amber-100 space-y-2 shadow-sm">
                                     <div class="flex items-center justify-between">
                                         <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fa-solid fa-layer-group text-amber-600 mr-1.5"></i> Zone : {{ groupeStat.groupe.nom }}</span>
                                         <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">{{ groupeStat.totalEvents }} évén.</span>
@@ -437,6 +440,22 @@
                                     </div>
                                     <p class="text-[10px] text-slate-500">
                                         Présent : {{ groupeStat.attended }} | Retards : {{ groupeStat.late }} | Absents : {{ groupeStat.absent }}
+                                    </p>
+                                </div>
+                            {% endif %}
+
+                            {% if fiangonanaStat|default(null) %}
+                                <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-100 space-y-2 shadow-sm">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fa-solid fa-church text-emerald-600 mr-1.5"></i> Paroisse : {{ fiangonanaStat.fiangonana.nom }}</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">{{ fiangonanaStat.totalEvents }} évén.</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs font-mono">
+                                        <span class="text-emerald-700 font-bold"><i class="fa-solid fa-check mr-1"></i>Présence : {{ fiangonanaStat.presenceRate }}%</span>
+                                        <span class="text-rose-700 font-bold"><i class="fa-solid fa-xmark mr-1"></i>Absence : {{ fiangonanaStat.absenceRate }}%</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500">
+                                        Présent : {{ fiangonanaStat.attended }} | Retards : {{ fiangonanaStat.late }} | Absents : {{ fiangonanaStat.absent }}
                                     </p>
                                 </div>
                             {% endif %}
