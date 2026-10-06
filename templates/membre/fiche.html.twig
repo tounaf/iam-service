@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Membre - {{ nom }} {{ prenom }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                margin: 0 auto;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen flex flex-col items-center justify-start p-6">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex space-x-4 w-full max-w-4xl justify-between items-center">
+        <a href="javascript:history.back()" class="text-xs font-bold text-slate-600 hover:text-slate-800 flex items-center">
+            &larr; Retour
+        </a>
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-xl shadow-md transition duration-200 flex items-center text-xs">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimer la fiche membre
+        </button>
+    </div>
+
+    <!-- Official Member Fiche Document -->
+    <div class="print-card bg-white w-full max-w-4xl rounded-3xl shadow-xl overflow-hidden border border-slate-200 flex flex-col">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-900 to-indigo-800 text-white p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-widest text-indigo-300">Fiche Individuelle de Membre</p>
+                <h1 class="text-2xl font-black mt-1">{{ prenom }} {{ nom }}</h1>
+                <p class="text-xs text-slate-300 mt-1">{{ fiangonanaNom }} • ID Membre: #{{ memberId }}</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-right">
+                <p class="text-[10px] uppercase tracking-wider text-indigo-200 font-bold">Année d'Exercice</p>
+                <p class="text-lg font-extrabold">{{ year }}</p>
+            </div>
+        </div>
+
+        <div class="p-8 space-y-8">
+            <!-- Section 1: Member Info & QR Code Badge -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                <!-- Profile & Personal Details -->
+                <div class="md:col-span-2 space-y-4">
+                    <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">
+                        Informations Personnelles
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Nom Complet</p>
+                            <p class="font-bold text-slate-800 text-sm">{{ nom }} {{ prenom }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Date de Naissance / Âge</p>
+                            <p class="font-bold text-slate-800">{{ dateNaissance }} {% if membre.age is defined and membre.age is not null %}({{ membre.age }} ans){% endif %}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Email</p>
+                            <p class="font-bold text-slate-800">{{ email }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Téléphone</p>
+                            <p class="font-bold text-slate-800">{{ telephone }}</p>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Adresse</p>
+                            <p class="font-bold text-slate-800">{{ adresse }}</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2 pt-2">
+                        Affiliations & Groupes
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Paroisse / Fiangonana</p>
+                            <p class="font-bold text-slate-800">{{ fiangonanaNom }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Zone Geographique / Groupe</p>
+                            <p class="font-bold text-slate-800">{{ groupeNom }}</p>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Associations Internes</p>
+                            <p class="font-bold text-slate-800">{{ associationsStr }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Official Member Card Box with QR Code -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col items-center text-center space-y-3">
+                    <span class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Badge QR Code Officiel</span>
+                    <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+                        <img class="w-32 h-32 object-contain" src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code Membre" />
+                    </div>
+                    <p class="text-[10px] font-mono text-slate-500">Token: {{ token }}</p>
+                    <span class="text-[9px] text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
+                        Présence par scan QR Code
+                    </span>
+                </div>
+            </div>
+
+            <!-- Section 2: Attendance Summary / Participation Stats -->
+            <div class="space-y-4">
+                <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">
+                    Bilan d'Assiduité & Participation (Année {{ year }})
+                </h2>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                    <div class="bg-indigo-50/60 border border-indigo-100 p-4 rounded-2xl">
+                        <p class="text-2xl font-black text-indigo-700">{{ stats.participationRate }}%</p>
+                        <p class="text-[10px] font-extrabold text-indigo-900 uppercase tracking-wider mt-1">Taux de Présence Global</p>
+                    </div>
+                    <div class="bg-emerald-50/60 border border-emerald-100 p-4 rounded-2xl">
+                        <p class="text-2xl font-black text-emerald-700">{{ stats.attendedActivitiesCount }} / {{ stats.totalActivitiesCount }}</p>
+                        <p class="text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider mt-1">Événements Assistés</p>
+                    </div>
+                    <div class="bg-amber-50/60 border border-amber-100 p-4 rounded-2xl">
+                        <p class="text-2xl font-black text-amber-700">{{ stats.lateCount }}</p>
+                        <p class="text-[10px] font-extrabold text-amber-900 uppercase tracking-wider mt-1">Retards Enregistrés</p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                        <p class="text-2xl font-black text-slate-700">{{ stats.onTimeCount }}</p>
+                        <p class="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider mt-1">Présences à l'Heure</p>
+                    </div>
+                </div>
+
+                <!-- Entity Breakdown if available -->
+                {% if stats.entityStats is defined and (stats.entityStats.associations is not empty or stats.entityStats.groupe is not null or stats.entityStats.fiangonana is not null) %}
+                    <div class="mt-4 pt-4 border-t border-slate-100">
+                        <p class="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-3">Détail par Entité ou Association</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                            {% if stats.entityStats.fiangonana is not null %}
+                                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <p class="font-bold text-slate-800">{{ stats.entityStats.fiangonana.nom }} (Paroisse)</p>
+                                    <p class="text-slate-500 mt-1">Assiduité: <span class="font-bold text-indigo-600">{{ stats.entityStats.fiangonana.presenceRate }}%</span> ({{ stats.entityStats.fiangonana.attended }}/{{ stats.entityStats.fiangonana.totalEvents }})</p>
+                                </div>
+                            {% endif %}
+                            {% if stats.entityStats.groupe is not null %}
+                                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <p class="font-bold text-slate-800">{{ stats.entityStats.groupe.nom }} (Groupe / Zone)</p>
+                                    <p class="text-slate-500 mt-1">Assiduité: <span class="font-bold text-indigo-600">{{ stats.entityStats.groupe.presenceRate }}%</span> ({{ stats.entityStats.groupe.attended }}/{{ stats.entityStats.groupe.totalEvents }})</p>
+                                </div>
+                            {% endif %}
+                            {% for assocStat in stats.entityStats.associations %}
+                                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <p class="font-bold text-slate-800">{{ assocStat.nom }}</p>
+                                    <p class="text-slate-500 mt-1">Assiduité: <span class="font-bold text-indigo-600">{{ assocStat.presenceRate }}%</span> ({{ assocStat.attended }}/{{ assocStat.totalEvents }})</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Document Footer -->
+        <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-500">
+            <span>Fiche émise le {{ "now"|date("d/m/Y à H:i") }}</span>
+            <span class="font-semibold text-slate-600">Document officiel - Direction Paroissiale</span>
+        </div>
+    </div>
+
+</body>
+</html>
