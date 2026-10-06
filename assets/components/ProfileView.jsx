@@ -235,6 +235,15 @@ export function ProfileView({ member, onRefresh }) {
               <i className="fa-solid fa-key mr-2 text-xs"></i>
               Mot de passe
             </button>
+            <a
+              href={`/api/membres/${member.id}/fiche`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition flex items-center justify-center"
+            >
+              <i className="fa-solid fa-file-invoice mr-2 text-xs"></i>
+              Ma Fiche Membre
+            </a>
             <button
               onClick={() => setShowCardModal(true)}
               className="flex-1 sm:flex-initial px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-100 transition flex items-center justify-center"
@@ -447,14 +456,25 @@ export function ProfileView({ member, onRefresh }) {
               <p className="text-xs text-slate-400 italic">Aucun QR code généré. Veuillez demander à la direction.</p>
             )}
 
-            <a
-              href={`/api/membres/${member.id}/carte`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href={`/api/membres/${member.id}/carte`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center"
-            >
-                <i className="fa-solid fa-print mr-1.5"></i> Ouvrir la carte officielle format impression &rarr;
-            </a>
+              >
+                <i className="fa-solid fa-id-card mr-1.5"></i> Carte Impression &rarr;
+              </a>
+              <span className="hidden sm:inline text-slate-300">•</span>
+              <a
+                href={`/api/membres/${member.id}/fiche`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-slate-700 hover:text-slate-900 hover:underline flex items-center"
+              >
+                <i className="fa-solid fa-file-invoice mr-1.5"></i> Fiche Membre &rarr;
+              </a>
+            </div>
           </div>
         </div>
       )}
