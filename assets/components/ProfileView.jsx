@@ -242,6 +242,15 @@ export function ProfileView({ member, onRefresh }) {
               <i className="fa-solid fa-id-card mr-2 text-sm"></i>
               Ma Carte QR Code
             </button>
+            <a
+              href={`/api/membres/${member.id}/fiche`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-100 transition flex items-center justify-center"
+            >
+              <i className="fa-solid fa-file-invoice mr-2 text-sm"></i>
+              Ma Fiche Membre
+            </a>
           </div>
         </div>
       </div>
@@ -447,14 +456,24 @@ export function ProfileView({ member, onRefresh }) {
               <p className="text-xs text-slate-400 italic">Aucun QR code généré. Veuillez demander à la direction.</p>
             )}
 
-            <a
-              href={`/api/membres/${member.id}/carte`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <a
+                href={`/api/membres/${member.id}/carte`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center"
-            >
-                <i className="fa-solid fa-print mr-1.5"></i> Ouvrir la carte officielle format impression &rarr;
-            </a>
+              >
+                <i className="fa-solid fa-print mr-1.5"></i> Carte officielle &rarr;
+              </a>
+              <a
+                href={`/api/membres/${member.id}/fiche`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+              >
+                <i className="fa-solid fa-file-invoice mr-1.5"></i> Fiche officielle &rarr;
+              </a>
+            </div>
           </div>
         </div>
       )}
