@@ -120,6 +120,10 @@
                             {{ m.fiangonana ? m.fiangonana.nom : 'Paroisse' }}
                         </td>
                         <td class="py-4 px-6 text-right space-x-2">
+                            <!-- Fiche Membre Printable -->
+                            <a href="/api/membres/{{ m.id }}/fiche" target="_blank" title="Imprimer Fiche Membre" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition">
+                                <i class="fa-solid fa-file-invoice"></i>
+                            </a>
                             <!-- Carte Membre Printable -->
                             <a href="/api/membres/{{ m.id }}/carte" target="_blank" title="Imprimer Carte Membre" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition">
                                 <i class="fa-solid fa-id-card"></i>
