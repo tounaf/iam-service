@@ -447,14 +447,24 @@ export function ProfileView({ member, onRefresh }) {
               <p className="text-xs text-slate-400 italic">Aucun QR code généré. Veuillez demander à la direction.</p>
             )}
 
-            <a
-              href={`/api/membres/${member.id}/carte`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              <a
+                href={`/api/membres/${member.id}/carte`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center"
-            >
-                <i className="fa-solid fa-print mr-1.5"></i> Ouvrir la carte officielle format impression &rarr;
-            </a>
+              >
+                <i className="fa-solid fa-id-card mr-1.5"></i> Carte officielle (Impression) &rarr;
+              </a>
+              <a
+                href={`/api/membres/${member.id}/fiche`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-purple-600 hover:text-purple-800 hover:underline flex items-center"
+              >
+                <i className="fa-solid fa-file-invoice mr-1.5"></i> Fiche membre complète &rarr;
+              </a>
+            </div>
           </div>
         </div>
       )}
