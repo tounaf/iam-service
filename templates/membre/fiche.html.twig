@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Membre - {{ nom }} {{ prenom }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-card {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen flex flex-col items-center justify-start p-4 sm:p-8 text-slate-800">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex space-x-4">
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition duration-200 flex items-center space-x-2">
+            <i class="fa-solid fa-print"></i>
+            <span>Imprimer la Fiche Membre</span>
+        </button>
+        <a href="/api/membres/{{ memberId }}/carte" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold py-2.5 px-5 rounded-xl shadow-sm transition duration-200 flex items-center space-x-2">
+            <i class="fa-solid fa-id-card text-indigo-600"></i>
+            <span>Voir la Carte Membre</span>
+        </a>
+    </div>
+
+    <!-- Main Printable Fiche Container -->
+    <div class="print-card bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden border border-slate-200 space-y-6">
+
+        <!-- Top Header Banner -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 text-white p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <span class="bg-indigo-500/30 text-indigo-200 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-indigo-400/30">
+                    Fiche Individuelle de Membre
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-extrabold mt-2">{{ fiangonanaNom }}</h1>
+                <p class="text-xs text-slate-300 mt-1"><i class="fa-solid fa-id-badge mr-1"></i> ID Membre: #{{ memberId }} {% if token is defined and token != 'N/A' %}| Jeton QR: {{ token }}{% endif %}</p>
+            </div>
+            <div class="flex items-center space-x-3 bg-white/10 p-3 rounded-xl border border-white/20 backdrop-blur-sm">
+                <img class="w-20 h-20 bg-white p-1 rounded-lg shadow-sm mix-blend-multiply" src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code du Membre" />
+                <div class="text-[11px] text-slate-200 leading-tight">
+                    <p class="font-bold text-white uppercase">Scan Présence</p>
+                    <p class="text-[10px] text-slate-300 mt-0.5">Code QR pour pointage rapide aux événements</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 sm:p-8 space-y-8">
+            <!-- Member Identity & Contact Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start pb-6 border-b border-slate-200">
+                <!-- Avatar / Photo -->
+                <div class="flex flex-col items-center text-center space-y-2">
+                    {% if photoUrl %}
+                        <img src="{{ photoUrl }}" alt="Photo {{ prenom }}" class="w-32 h-40 object-cover rounded-2xl border-2 border-slate-200 shadow-md">
+                    {% else %}
+                        <div class="w-32 h-40 rounded-2xl bg-indigo-50 text-indigo-600 flex flex-col items-center justify-center font-bold border-2 border-indigo-100 shadow-inner">
+                            <i class="fa-solid fa-user text-5xl mb-2"></i>
+                            <span class="text-xs uppercase font-semibold text-indigo-400">Photo N/A</span>
+                        </div>
+                    {% endif %}
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        #{{ memberId }}
+                    </span>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="md:col-span-2 space-y-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-900">{{ prenom }} {{ nom }}</h2>
+                        <div class="flex flex-wrap items-center gap-2 mt-1">
+                            {% if sexe %}
+                                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full {% if sexe == 'M' %}bg-blue-50 text-blue-700 border border-blue-200{% elseif sexe == 'F' %}bg-pink-50 text-pink-700 border border-pink-200{% else %}bg-slate-100 text-slate-700{% endif %}">
+                                    <i class="fa-solid {% if sexe == 'M' %}fa-mars{% elseif sexe == 'F' %}fa-venus{% else %}fa-genderless{% endif %} mr-1"></i>
+                                    {% if sexe == 'M' %}Homme (M){% elseif sexe == 'F' %}Femme (F){% else %}{{ sexe }}{% endif %}
+                                </span>
+                            {% endif %}
+                            {% if age is not null %}
+                                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {{ age }} ans
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email</p>
+                            <p class="font-semibold text-slate-800 mt-0.5">{{ email|default('Non renseigné') }}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Téléphone</p>
+                            <p class="font-semibold text-slate-800 mt-0.5">{{ telephone|default('Non renseigné') }}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date de Naissance</p>
+                            <p class="font-semibold text-slate-800 mt-0.5">{{ dateNaissance }}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Adresse</p>
+                            <p class="font-semibold text-slate-800 mt-0.5">{{ adresse }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Affiliations & Roles Section -->
+            <div class="space-y-3 pb-6 border-b border-slate-200">
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center">
+                    <i class="fa-solid fa-sitemap text-indigo-600 mr-2"></i> Appartenances & Mandats Paroissiaux
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-100 space-y-1">
+                        <p class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider"><i class="fa-solid fa-church mr-1"></i> Paroisse / Église</p>
+                        <p class="font-extrabold text-slate-900 text-sm">{{ fiangonanaNom }}</p>
+                    </div>
+
+                    <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-100 space-y-1">
+                        <p class="text-[10px] font-bold text-amber-800 uppercase tracking-wider"><i class="fa-solid fa-map-location-dot mr-1"></i> Zone / Groupe</p>
+                        <p class="font-extrabold text-slate-900 text-sm">{{ groupeNom }}</p>
+                    </div>
+
+                    <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-100 space-y-1">
+                        <p class="text-[10px] font-bold text-blue-800 uppercase tracking-wider"><i class="fa-solid fa-users mr-1"></i> Associations Interne</p>
+                        <p class="font-extrabold text-slate-900 text-sm">{{ associationsStr }}</p>
+                    </div>
+                </div>
+
+                {% if roles is defined and roles|length > 0 %}
+                    <div class="mt-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <p class="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">Rôles & Mandats Actifs :</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            {% for r in roles %}
+                                <div class="bg-white p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
+                                    <div>
+                                        <span class="font-bold text-indigo-700 uppercase font-mono">{{ r.roleName }}</span>
+                                        <p class="text-[10px] text-slate-500">{{ r.contextLabel }}</p>
+                                    </div>
+                                    <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{{ r.exerciceYear }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Participation Statistics Section -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center">
+                        <i class="fa-solid fa-chart-line text-indigo-600 mr-2"></i> Statistiques Annuelles d'Assiduité (Année {{ year }})
+                    </h3>
+                    <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                        Taux de Participation : {{ stats.participationRate|default(0) }}%
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Événements Prévus</p>
+                        <p class="text-xl font-extrabold text-slate-800 font-mono mt-1">{{ stats.totalActivitiesCount|default(0) }}</p>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                        <p class="text-[10px] font-bold text-emerald-800 uppercase">Présences Validées</p>
+                        <p class="text-xl font-extrabold text-emerald-700 font-mono mt-1">{{ stats.attendedActivitiesCount|default(0) }}</p>
+                    </div>
+                    <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-200">
+                        <p class="text-[10px] font-bold text-indigo-800 uppercase">À l'Heure</p>
+                        <p class="text-xl font-extrabold text-indigo-700 font-mono mt-1">{{ stats.onTimeCount|default(0) }}</p>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                        <p class="text-[10px] font-bold text-amber-800 uppercase">Arrivées Tardives</p>
+                        <p class="text-xl font-extrabold text-amber-700 font-mono mt-1">{{ stats.lateCount|default(0) }}</p>
+                    </div>
+                </div>
+
+                {% if stats.entityStats is defined and (stats.entityStats.associations|length > 0 or stats.entityStats.groupe or stats.entityStats.fiangonana) %}
+                    <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+                        <p class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Détail par Entité d'Appartenance :</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {% for a in stats.entityStats.associations|default([]) %}
+                                <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-1">
+                                    <p class="font-bold text-slate-800"><i class="fa-solid fa-users text-blue-600 mr-1"></i> {{ a.nom }}</p>
+                                    <p class="text-[11px] text-emerald-700 font-extrabold font-mono">Taux : {{ a.presenceRate }}%</p>
+                                    <p class="text-[10px] text-slate-500">Présents: {{ a.attended }}/{{ a.totalEvents }} (Absents: {{ a.absent }})</p>
+                                </div>
+                            {% endfor %}
+
+                            {% if stats.entityStats.groupe %}
+                                <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-1">
+                                    <p class="font-bold text-slate-800"><i class="fa-solid fa-layer-group text-amber-600 mr-1"></i> Zone : {{ stats.entityStats.groupe.nom }}</p>
+                                    <p class="text-[11px] text-emerald-700 font-extrabold font-mono">Taux : {{ stats.entityStats.groupe.presenceRate }}%</p>
+                                    <p class="text-[10px] text-slate-500">Présents: {{ stats.entityStats.groupe.attended }}/{{ stats.entityStats.groupe.totalEvents }} (Absents: {{ stats.entityStats.groupe.absent }})</p>
+                                </div>
+                            {% endif %}
+
+                            {% if stats.entityStats.fiangonana %}
+                                <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-1">
+                                    <p class="font-bold text-slate-800"><i class="fa-solid fa-church text-emerald-600 mr-1"></i> Paroisse : {{ stats.entityStats.fiangonana.nom }}</p>
+                                    <p class="text-[11px] text-emerald-700 font-extrabold font-mono">Taux : {{ stats.entityStats.fiangonana.presenceRate }}%</p>
+                                    <p class="text-[10px] text-slate-500">Présents: {{ stats.entityStats.fiangonana.attended }}/{{ stats.entityStats.fiangonana.totalEvents }} (Absents: {{ stats.entityStats.fiangonana.absent }})</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-2">
+            <div>
+                <span>Document Officiel généré le {{ "now"|date("d/m/Y à H:i") }}</span>
+            </div>
+            <div class="font-medium text-slate-600">
+                <span>Direction Paroissiale - Validité Permanente</span>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
