@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Membre - {{ nom }} {{ prenom }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-card {
+                box-shadow: none;
+                border: 1px solid #e2e8f0;
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex space-x-4">
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimer la fiche
+        </button>
+    </div>
+
+    <!-- Member Detailed Fiche -->
+    <div class="print-card bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden border border-slate-200 flex flex-col">
+        <!-- Top Colored Header Bar -->
+        <div class="bg-gradient-to-r from-blue-800 via-indigo-800 to-indigo-900 text-white p-6 flex justify-between items-center">
+            <div>
+                <span class="text-xs font-semibold uppercase tracking-widest text-blue-200 block mb-1">Fiche Individuelle de Membre</span>
+                <h1 class="text-2xl font-bold">{{ fiangonanaNom }}</h1>
+            </div>
+            <div class="text-right">
+                <span class="inline-block bg-white/20 backdrop-blur-sm text-white text-xs uppercase font-bold tracking-wider px-3 py-1 rounded-full border border-white/30">
+                    ID #{{ memberId }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Main Fiche Body -->
+        <div class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Left Column: Photo & QR Code -->
+            <div class="flex flex-col items-center space-y-6 md:border-r border-slate-200 pr-0 md:pr-6">
+                <!-- Avatar / Photo -->
+                <div class="w-36 h-36 rounded-full overflow-hidden border-4 border-indigo-100 shadow-md bg-slate-100 flex items-center justify-center">
+                    {% if photoUrl %}
+                        <img src="{{ photoUrl }}" alt="{{ nom }} {{ prenom }}" class="w-full h-full object-cover" />
+                    {% else %}
+                        <span class="text-4xl font-bold text-indigo-600">{{ prenom|slice(0, 1) }}{{ nom|slice(0, 1) }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- QR Code Box -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center w-full flex flex-col items-center shadow-inner">
+                    <img class="w-32 h-32 mix-blend-multiply" src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code Membre" />
+                    <span class="text-[10px] uppercase tracking-wider text-slate-500 mt-2 font-bold block">Scanner pour Présence</span>
+                    <span class="text-[9px] text-slate-400 font-mono mt-0.5 block truncate max-w-[180px]">{{ token }}</span>
+                </div>
+            </div>
+
+            <!-- Right Column: Details & Affiliations -->
+            <div class="md:col-span-2 space-y-6">
+                <!-- Profile Section -->
+                <div>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-600 border-b border-indigo-100 pb-2 mb-4">Informations Personnelles</h2>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Nom & Prénom</p>
+                            <p class="font-bold text-slate-800 text-base mt-0.5">{{ nom }} {{ prenom }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Genre / Sexe</p>
+                            <p class="font-semibold text-slate-700 mt-0.5">
+                                {% if sexe == 'M' %}Masculin{% elseif sexe == 'F' %}Féminin{% else %}{{ sexe }}{% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Email</p>
+                            <p class="font-medium text-slate-700 mt-0.5 truncate">{{ email }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Téléphone</p>
+                            <p class="font-medium text-slate-700 mt-0.5">{{ telephone }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Adresse</p>
+                            <p class="font-medium text-slate-700 mt-0.5">{{ adresse }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Affiliations Section -->
+                <div>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-600 border-b border-indigo-100 pb-2 mb-4">Rattachements & Affiliations</h2>
+                    <div class="space-y-3 text-sm">
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Paroisse (Fiangonana)</p>
+                            <p class="font-bold text-slate-800 mt-0.5">{{ fiangonanaNom }}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Zone / Groupe Géographique</p>
+                            <p class="font-bold text-slate-800 mt-0.5">{{ groupeNom }}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium mb-1">Associations Affiliées</p>
+                            {% if associationsArray is not empty %}
+                                <div class="flex flex-wrap gap-1.5 mt-1">
+                                    {% for assoc in associationsArray %}
+                                        <span class="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-md text-xs border border-indigo-100">
+                                            {{ assoc.nom }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-slate-500 font-normal italic">Aucune association affiliée</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bar -->
+        <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+            <span>Système de Gestion Paroissiale - Fiche Officielle</span>
+            <span class="font-medium">Document Généré le {{ "now"|date("d/m/Y") }}</span>
+        </div>
+    </div>
+
+</body>
+</html>
