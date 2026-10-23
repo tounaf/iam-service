@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Membre;
+use App\Service\AttendanceStatsService;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,10 +17,12 @@ use Twig\Environment;
 class MembreCarteController extends AbstractController
 {
     private Environment $twig;
+    private ?AttendanceStatsService $attendanceStatsService;
 
-    public function __construct(Environment $twig)
+    public function __construct(Environment $twig, ?AttendanceStatsService $attendanceStatsService = null)
     {
         $this->twig = $twig;
+        $this->attendanceStatsService = $attendanceStatsService;
     }
 
     #[Route('/api/membres/{id}/carte', name: 'api_membre_carte', methods: ['GET'])]
