@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Membre - {{ prenom }} {{ nom }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-card {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+                margin: 0 auto !important;
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen p-4 sm:p-8 flex flex-col items-center justify-start">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex items-center justify-between w-full max-w-4xl bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <div>
+            <h1 class="text-sm font-bold text-slate-800">Fiche Individuelle de Membre</h1>
+            <p class="text-xs text-slate-500">Imprimez ou enregistrez au format PDF la fiche officielle avec QR Code de présence.</p>
+        </div>
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-xl shadow-sm transition duration-200 flex items-center text-xs">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimer la Fiche
+        </button>
+    </div>
+
+    <!-- Official Member Fiche Card -->
+    <div class="print-card bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden border border-slate-200 flex flex-col space-y-6 p-8">
+
+        <!-- Top Header Bar -->
+        <div class="border-b border-slate-200 pb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                    Fiche Officielle de Membre
+                </span>
+                <h1 class="text-2xl font-black text-slate-900 mt-2">{{ fiangonanaNom }}</h1>
+                <p class="text-xs text-slate-500 mt-0.5">Gestion Paroissiale & Suivi des Présences Aux Événements</p>
+            </div>
+            <div class="text-left sm:text-right">
+                <span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 inline-block">
+                    ID Membre: #{{ memberId }}
+                </span>
+                <p class="text-[11px] text-slate-400 mt-1">Année d'Exercice : {{ year }}</p>
+            </div>
+        </div>
+
+        <!-- Main Content Grid: Member Info & QR Code -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+
+            <!-- Member Identity Section (2 cols) -->
+            <div class="md:col-span-2 space-y-5">
+                <div class="flex items-start space-x-5">
+                    {% if photoUrl %}
+                        <img src="{{ photoUrl }}" alt="Photo {{ prenom }}" class="w-24 h-32 object-cover rounded-xl border border-slate-200 shadow-sm">
+                    {% else %}
+                        <div class="w-24 h-32 rounded-xl bg-slate-100 text-slate-400 flex flex-col items-center justify-center font-bold text-2xl border border-slate-200">
+                            <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    {% endif %}
+                    <div class="space-y-1">
+                        <h2 class="text-xl font-extrabold text-slate-800">{{ prenom }} {{ nom }}</h2>
+                        <div class="flex flex-wrap items-center gap-2 pt-1">
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                                Sexe : {{ sexeLabel }}
+                            </span>
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                                Né(e) le : {{ dateNaissance }}
+                            </span>
+                        </div>
+                        <p class="text-xs font-medium text-indigo-700 pt-1">
+                            Paroisse / Église : {{ fiangonanaNom }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Zone Géographique / Groupe</p>
+                        <p class="font-bold text-slate-800 mt-0.5">{{ groupeNom }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Associations Affiliées</p>
+                        <p class="font-bold text-slate-800 mt-0.5">{{ associationsStr }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Adresse Email</p>
+                        <p class="font-semibold text-slate-700 mt-0.5">{{ email }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Téléphone & Contact</p>
+                        <p class="font-semibold text-slate-700 mt-0.5">{{ telephone }}</p>
+                    </div>
+                </div>
+
+                {% if roles is defined and roles|length > 0 %}
+                    <div class="space-y-1.5">
+                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Responsabilités & Rôles Contextuels</p>
+                        <div class="flex flex-wrap gap-2">
+                            {% for r in roles %}
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-100">
+                                    {{ r.role }} ({{ r.context }})
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- QR Code Section (1 col) -->
+            <div class="flex flex-col items-center justify-center bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center space-y-3">
+                <p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Code QR de Présence</p>
+                <div class="p-2 bg-white rounded-xl border border-slate-200 shadow-inner">
+                    <img class="w-36 h-36" src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code du Membre" />
+                </div>
+                <div class="space-y-1">
+                    <p class="text-[10px] text-slate-400 font-mono">Token: {{ token }}</p>
+                    <p class="text-[10px] text-slate-500 font-medium leading-tight">
+                        À présenter lors des événements, cultes ou formations pour le pointage rapide par QR Code.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Participation & Assiduité Statistics Section -->
+        {% if stats is defined and stats %}
+            <div class="pt-4 border-t border-slate-200 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                        Statistiques de Participation & Assiduité ({{ year }})
+                    </h3>
+                    <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
+                        Taux de Participation: {{ stats.participationRate }}%
+                    </span>
+                </div>
+
+                <!-- KPI Cards Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <p class="text-[10px] uppercase font-bold text-slate-400">Événements Prévus</p>
+                        <p class="text-lg font-black text-slate-800 mt-1 font-mono">{{ stats.totalActivitiesCount }}</p>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                        <p class="text-[10px] uppercase font-bold text-emerald-700">Présences Effectives</p>
+                        <p class="text-lg font-black text-emerald-800 mt-1 font-mono">{{ stats.attendedActivitiesCount }}</p>
+                    </div>
+                    <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-200">
+                        <p class="text-[10px] uppercase font-bold text-indigo-700">À l'Heure</p>
+                        <p class="text-lg font-black text-indigo-800 mt-1 font-mono">{{ stats.onTimeCount }}</p>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                        <p class="text-[10px] uppercase font-bold text-amber-700">En Retard</p>
+                        <p class="text-lg font-black text-amber-800 mt-1 font-mono">{{ stats.lateCount }}</p>
+                    </div>
+                </div>
+
+                <!-- Entity Stats Breakdown -->
+                {% if stats.entityStats is defined and (stats.entityStats.associations|length > 0 or stats.entityStats.groupe or stats.entityStats.fiangonana) %}
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
+                        {% for aStat in stats.entityStats.associations %}
+                            <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                                <p class="font-bold text-blue-900">{{ aStat.nom }}</p>
+                                <p class="text-[11px] text-blue-700 font-semibold mt-1">
+                                    Taux Présence : <span class="font-mono font-bold">{{ aStat.presenceRate }}%</span> ({{ aStat.attended }}/{{ aStat.totalEvents }})
+                                </p>
+                            </div>
+                        {% endfor %}
+                        {% if stats.entityStats.groupe %}
+                            <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-100">
+                                <p class="font-bold text-amber-900">Zone: {{ stats.entityStats.groupe.nom }}</p>
+                                <p class="text-[11px] text-amber-700 font-semibold mt-1">
+                                    Taux Présence : <span class="font-mono font-bold">{{ stats.entityStats.groupe.presenceRate }}%</span> ({{ stats.entityStats.groupe.attended }}/{{ stats.entityStats.groupe.totalEvents }})
+                                </p>
+                            </div>
+                        {% endif %}
+                        {% if stats.entityStats.fiangonana %}
+                            <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                                <p class="font-bold text-emerald-900">Paroisse: {{ stats.entityStats.fiangonana.nom }}</p>
+                                <p class="text-[11px] text-emerald-700 font-semibold mt-1">
+                                    Taux Présence : <span class="font-mono font-bold">{{ stats.entityStats.fiangonana.presenceRate }}%</span> ({{ stats.entityStats.fiangonana.attended }}/{{ stats.entityStats.fiangonana.totalEvents }})
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Document Footer -->
+        <div class="border-t border-slate-200 pt-4 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-400">
+            <span>Fiche Membre Générée Officiellement &bull; Valide pour l'exercice {{ year }}</span>
+            <span class="font-mono">Éditée le {{ 'now'|date('d/m/Y H:i') }}</span>
+        </div>
+
+    </div>
+
+</body>
+</html>
