@@ -36,6 +36,8 @@ class MembreCarteController extends AbstractController
         $token = $membre->getQrCodeToken() ?: 'N/A';
         $host = $request->getSchemeAndHttpHost() ?: 'http://localhost';
         $scanUrl = $token !== 'N/A' ? sprintf('%s/membres/scan/%s', $host, $token) : 'N/A';
+        $ficheUrl = sprintf('%s/api/membres/%d/fiche', $host, $membre->getId());
+        $participationStatsUrl = sprintf('%s/api/membres/%d/participation-stats', $host, $membre->getId());
 
         $raw = $request->query->get('raw');
         $qrData = ($raw === '1' || $raw === 'true') ? $token : $scanUrl;
@@ -73,10 +75,6 @@ class MembreCarteController extends AbstractController
         $email = $membre->getEmail() ?? '';
         $telephone = $membre->getTelephone() ?? 'Non renseigné';
 
-        if ($request === null) {
-            $request = Request::createFromGlobals();
-        }
-
         $acceptHeader = $request->headers->get('Accept', '');
         $format = strtolower((string) $request->query->get('format', ''));
 
@@ -96,6 +94,8 @@ class MembreCarteController extends AbstractController
                 'qrCodeToken' => $token,
                 'qrCodeBase64' => $qrCodeBase64,
                 'scanUrl' => $scanUrl,
+                'ficheUrl' => $ficheUrl,
+                'participationStatsUrl' => $participationStatsUrl,
             ], Response::HTTP_OK, [
                 'Cache-Control' => 'public, max-age=3600'
             ]);
@@ -113,6 +113,8 @@ class MembreCarteController extends AbstractController
             'memberId' => $membre->getId(),
             'token' => $token,
             'scanUrl' => $scanUrl,
+            'ficheUrl' => $ficheUrl,
+            'participationStatsUrl' => $participationStatsUrl,
         ]);
 
         return new Response(
