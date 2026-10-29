@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Membre - {{ nom }} {{ prenom }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-sheet {
+                box-shadow: none;
+                border: none;
+                margin: 0 auto;
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen p-4 sm:p-8 flex flex-col items-center">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex space-x-4">
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition duration-200 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimer la fiche
+        </button>
+        <a href="/api/membres/{{ memberId }}/carte" target="_blank" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold py-2.5 px-6 rounded-xl shadow-sm transition duration-200 flex items-center">
+            Voir Carte
+        </a>
+    </div>
+
+    <!-- Official Member Sheet (A4 format style) -->
+    <div class="print-sheet bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden border border-slate-200 p-8 space-y-8">
+
+        <!-- Header Banner -->
+        <div class="border-b-2 border-indigo-600 pb-6 flex justify-between items-start">
+            <div class="space-y-1">
+                <p class="text-xs font-bold uppercase tracking-widest text-indigo-600">Espace Paroissial • Fiche Officielle</p>
+                <h1 class="text-2xl font-extrabold text-slate-900">{{ fiangonanaNom }}</h1>
+                <p class="text-xs text-slate-500 font-medium">Répertoire & Historique Individuel du Membre</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-block bg-indigo-100 text-indigo-800 text-xs font-extrabold px-3 py-1.5 rounded-full border border-indigo-200">
+                    ID Membre: #{{ memberId }}
+                </span>
+                <p class="text-[11px] text-slate-400 mt-1">Année de référence: {{ year }}</p>
+            </div>
+        </div>
+
+        <!-- Section 1: Member Identity & QR Code -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+            <!-- Left & Center: Photo & Personal Information -->
+            <div class="md:col-span-2 flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-6 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                <div class="w-28 h-32 bg-indigo-100 text-indigo-700 font-bold text-3xl rounded-xl border-2 border-white shadow-sm overflow-hidden flex shrink-0 items-center justify-center">
+                    {% if photoUrl %}
+                        <img src="{{ photoUrl }}" alt="{{ prenom }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <span>{{ prenom ? prenom|slice(0, 1)|upper : 'M' }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-3 flex-1">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">{{ nom }} {{ prenom }}</h2>
+                        <p class="text-xs text-slate-500">
+                            {% if sexe != 'Non précisé' %}{{ sexe == 'M' or sexe == 'Masculin' ? 'Homme' : 'Femme' }}{% endif %}
+                            {% if age %}{% if sexe != 'Non précisé' %} • {% endif %}{{ age }} ans{% endif %}
+                            {% if dateNaissance %}(né(e) le {{ dateNaissance }}){% endif %}
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Email</span>
+                            <span class="font-medium text-slate-700">{{ email ? email : 'Non renseigné' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Téléphone</span>
+                            <span class="font-medium text-slate-700">{{ telephone }}</span>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Adresse</span>
+                            <span class="font-medium text-slate-700">{{ adresse }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: QR Code for Attendance Check-in -->
+            <div class="bg-indigo-50/50 p-5 rounded-xl border border-indigo-100 flex flex-col items-center justify-center text-center space-y-2">
+                <p class="text-xs font-bold text-indigo-900 uppercase tracking-wider">Pass Scan Présence</p>
+                <img class="w-32 h-32 bg-white p-1 rounded-lg shadow-sm border border-indigo-200" src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code Présence" />
+                <span class="text-[10px] font-mono text-slate-500 font-semibold">Token: {{ token }}</span>
+                <p class="text-[9px] text-indigo-600 font-medium leading-tight">À scanner à l'entrée des formations, activités & événements</p>
+            </div>
+        </div>
+
+        <!-- Section 2: Affiliations (Paroisse, Groupe, Associations) -->
+        <div class="space-y-3">
+            <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-2">
+                Affiliations & Rattachements
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Paroisse / Fiangonana</span>
+                    <p class="text-sm font-bold text-slate-800">{{ fiangonanaNom }}</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Zone / Groupe Résidentiel</span>
+                    <p class="text-sm font-bold text-slate-800">{{ groupeNom }}</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Associations Internes</span>
+                    <p class="text-sm font-bold text-slate-800">{{ associationsStr }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Annual Participation Statistics -->
+        {% if stats is defined and stats is not null %}
+        <div class="space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                    Bilan & Taux de Participation Annuel ({{ year }})
+                </h3>
+                <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                    Taux Global: {{ stats.participationRate }}%
+                </span>
+            </div>
+
+            <!-- Stats Summary Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <p class="text-2xl font-extrabold text-indigo-600">{{ stats.totalActivitiesCount }}</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Activités Total</p>
+                </div>
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <p class="text-2xl font-extrabold text-emerald-600">{{ stats.attendedActivitiesCount }}</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Présences Effectives</p>
+                </div>
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <p class="text-2xl font-extrabold text-amber-600">{{ stats.lateCount }}</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Retards ({{ stats.lateRate }}%)</p>
+                </div>
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <p class="text-2xl font-extrabold text-indigo-700">{{ stats.onTimeCount }}</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">À l'heure ({{ stats.onTimeRate }}%)</p>
+                </div>
+            </div>
+
+            <!-- Entity Breakdown Table -->
+            {% if stats.entityStats is defined %}
+            <div class="mt-4 overflow-hidden rounded-xl border border-slate-200">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
+                            <th class="p-3">Entité / Structure</th>
+                            <th class="p-3 text-center">Événements</th>
+                            <th class="p-3 text-center">Présents</th>
+                            <th class="p-3 text-center">Absents</th>
+                            <th class="p-3 text-center">Taux de Présence</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                        {% if stats.entityStats.fiangonana %}
+                        <tr>
+                            <td class="p-3 font-semibold">{{ stats.entityStats.fiangonana.nom }} (Paroisse)</td>
+                            <td class="p-3 text-center">{{ stats.entityStats.fiangonana.totalEvents }}</td>
+                            <td class="p-3 text-center text-emerald-600 font-bold">{{ stats.entityStats.fiangonana.attended }}</td>
+                            <td class="p-3 text-center text-rose-500">{{ stats.entityStats.fiangonana.absent }}</td>
+                            <td class="p-3 text-center font-bold text-indigo-600">{{ stats.entityStats.fiangonana.presenceRate }}%</td>
+                        </tr>
+                        {% endif %}
+
+                        {% if stats.entityStats.groupe %}
+                        <tr>
+                            <td class="p-3 font-semibold">{{ stats.entityStats.groupe.nom }} (Groupe / Zone)</td>
+                            <td class="p-3 text-center">{{ stats.entityStats.groupe.totalEvents }}</td>
+                            <td class="p-3 text-center text-emerald-600 font-bold">{{ stats.entityStats.groupe.attended }}</td>
+                            <td class="p-3 text-center text-rose-500">{{ stats.entityStats.groupe.absent }}</td>
+                            <td class="p-3 text-center font-bold text-indigo-600">{{ stats.entityStats.groupe.presenceRate }}%</td>
+                        </tr>
+                        {% endif %}
+
+                        {% for assoc in stats.entityStats.associations %}
+                        <tr>
+                            <td class="p-3 font-semibold">{{ assoc.nom }} (Association)</td>
+                            <td class="p-3 text-center">{{ assoc.totalEvents }}</td>
+                            <td class="p-3 text-center text-emerald-600 font-bold">{{ assoc.attended }}</td>
+                            <td class="p-3 text-center text-rose-500">{{ assoc.absent }}</td>
+                            <td class="p-3 text-center font-bold text-indigo-600">{{ assoc.presenceRate }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Footer Notice -->
+        <div class="border-t border-slate-100 pt-4 flex justify-between items-center text-[10px] text-slate-400 font-medium">
+            <span>Fiche émise par la Direction Paroissiale</span>
+            <span>Document Officiel Validé</span>
+        </div>
+
+    </div>
+
+</body>
+</html>
