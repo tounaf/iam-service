@@ -96,6 +96,8 @@ class MembreCarteController extends AbstractController
                 'qrCodeToken' => $token,
                 'qrCodeBase64' => $qrCodeBase64,
                 'scanUrl' => $scanUrl,
+                'ficheUrl' => sprintf('/api/membres/%d/fiche', $membre->getId()),
+                'participationStatsUrl' => sprintf('/api/membres/%d/participation-stats', $membre->getId()),
             ], Response::HTTP_OK, [
                 'Cache-Control' => 'public, max-age=3600'
             ]);
