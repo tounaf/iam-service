@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche Membre Officielle - {{ prenom }} {{ nom }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-sheet {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                margin: 0 auto;
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen flex flex-col items-center py-8 px-4">
+
+    <!-- Action Bar for Printing -->
+    <div class="no-print mb-6 flex items-center space-x-4">
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition duration-200 flex items-center space-x-2 text-sm">
+            <i class="fa-solid fa-print text-base"></i>
+            <span>Imprimer la Fiche Membre</span>
+        </button>
+        <a href="/api/membres/{{ memberId }}/carte" target="_blank" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold py-2.5 px-5 rounded-xl shadow-sm transition duration-200 flex items-center space-x-2 text-sm">
+            <i class="fa-solid fa-id-card text-indigo-600"></i>
+            <span>Voir Carte Format Réduit</span>
+        </a>
+    </div>
+
+    <!-- Official Member Sheet (A4 format style) -->
+    <div class="print-sheet bg-white w-full max-w-3xl rounded-3xl shadow-xl overflow-hidden border border-slate-200 flex flex-col text-slate-800">
+
+        <!-- Top Header -->
+        <div class="bg-gradient-to-r from-blue-800 via-indigo-900 to-slate-900 text-white p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <span class="bg-blue-400/20 text-blue-200 text-[11px] uppercase font-bold tracking-widest px-3 py-1 rounded-full border border-blue-400/30 inline-block mb-2">
+                    Fiche d'Identité & Carte Officielle
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">{{ fiangonanaNom }}</h1>
+                <p class="text-xs text-blue-200 mt-1">Registre Paroissial & Suivi d'Assiduité des Membres</p>
+            </div>
+            <div class="text-left sm:text-right">
+                <span class="text-xs text-slate-300 font-mono block">ID Membre : #{{ memberId }}</span>
+                <span class="text-xs text-slate-300 font-mono block">Exercice : {{ year }}</span>
+            </div>
+        </div>
+
+        <div class="p-6 sm:p-8 space-y-8">
+
+            <!-- Member Identity & QR Code Banner -->
+            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <!-- Avatar photo -->
+                <div class="shrink-0">
+                    {% if photoUrl %}
+                        <img src="{{ photoUrl }}" alt="Photo {{ prenom }}" class="w-28 h-36 object-cover rounded-2xl border-2 border-white shadow-md">
+                    {% else %}
+                        <div class="w-28 h-36 rounded-2xl bg-indigo-100 text-indigo-700 flex flex-col items-center justify-center font-bold text-3xl border-2 border-indigo-200 shadow-inner">
+                            <i class="fa-solid fa-user text-4xl"></i>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Info summary -->
+                <div class="flex-1 text-center sm:text-left space-y-2">
+                    <h2 class="text-2xl font-extrabold text-slate-900">{{ prenom }} {{ nom }}</h2>
+                    <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs">
+                        {% if sexe != 'Non précisé' %}
+                            <span class="px-2.5 py-1 rounded-lg font-bold bg-white border border-slate-200 text-slate-700">
+                                Sexe: {{ sexe == 'M' ? 'Homme' : (sexe == 'F' ? 'Femme' : sexe) }}
+                            </span>
+                        {% endif %}
+                        {% if age is not null %}
+                            <span class="px-2.5 py-1 rounded-lg font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {{ age }} ans
+                            </span>
+                        {% endif %}
+                        <span class="px-2.5 py-1 rounded-lg font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            {{ groupeNom }}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 pt-2">
+                        <p><i class="fa-solid fa-envelope text-slate-400 mr-1.5"></i>{{ email ?: 'Email non renseigné' }}</p>
+                        <p><i class="fa-solid fa-phone text-slate-400 mr-1.5"></i>{{ telephone ?: 'Téléphone non renseigné' }}</p>
+                        <p class="sm:col-span-2"><i class="fa-solid fa-location-dot text-slate-400 mr-1.5"></i>{{ adresse ?: 'Adresse non renseignée' }}</p>
+                    </div>
+                </div>
+
+                <!-- Official QR Code for scan -->
+                <div class="shrink-0 flex flex-col items-center justify-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <img class="w-32 h-32" src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code Présence Membre" />
+                    <span class="text-[9px] uppercase tracking-widest text-indigo-700 font-extrabold mt-1">QR Code Présence</span>
+                    <span class="text-[8px] font-mono text-slate-400">Scan: {{ token }}</span>
+                </div>
+            </div>
+
+            <!-- Parochial Affiliations and CRBAC Mandates -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Affiliations -->
+                <div class="border border-slate-200 rounded-2xl p-5 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        <i class="fa-solid fa-sitemap text-indigo-600 mr-2"></i> Rapprochement & Affiliations
+                    </h3>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between py-1.5 border-b border-slate-100">
+                            <span class="text-slate-500">Paroisse / Église :</span>
+                            <span class="font-bold text-slate-800">{{ fiangonanaNom }}</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-slate-100">
+                            <span class="text-slate-500">Zone Résidentielle :</span>
+                            <span class="font-bold text-slate-800">{{ groupeNom }}</span>
+                        </div>
+                        <div class="py-1.5">
+                            <span class="text-slate-500 block mb-1">Associations internes :</span>
+                            {% if associationsList|length > 0 %}
+                                <div class="flex flex-wrap gap-1.5">
+                                    {% for a in associationsList %}
+                                        <span class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">{{ a }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="italic text-slate-400">Aucune association rattachée</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mandates and Roles -->
+                <div class="border border-slate-200 rounded-2xl p-5 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        <i class="fa-solid fa-user-shield text-indigo-600 mr-2"></i> Responsabilités & Mandats
+                    </h3>
+                    <div class="space-y-2 text-xs">
+                        {% if rolesList|length > 0 %}
+                            {% for r in rolesList %}
+                                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                                    <div>
+                                        <p class="font-bold text-indigo-800 uppercase">{{ r.role }}</p>
+                                        <p class="text-[11px] text-slate-500">{{ r.context }}</p>
+                                    </div>
+                                    <span class="text-[10px] font-mono font-bold bg-white px-2 py-1 rounded border border-slate-200 text-slate-600">
+                                        {{ r.exerciceYear }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="italic text-slate-400 py-4 text-center">Aucun mandat ou responsabilité active.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance & Participation Statistics -->
+            {% if stats is not null %}
+                <div class="border border-slate-200 rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-chart-line text-emerald-600 mr-2"></i> Taux d'Assiduité & Participation (Année {{ year }})
+                        </h3>
+                        <span class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                            {{ stats.participationRate }}% de présence
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Événements</p>
+                            <p class="text-xl font-black text-slate-800">{{ stats.totalActivitiesCount }}</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                            <p class="text-[10px] uppercase font-bold text-emerald-700">Présences</p>
+                            <p class="text-xl font-black text-emerald-700">{{ stats.attendedActivitiesCount }}</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200">
+                            <p class="text-[10px] uppercase font-bold text-indigo-700">À l'heure</p>
+                            <p class="text-xl font-black text-indigo-700">{{ stats.onTimeCount }}</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                            <p class="text-[10px] uppercase font-bold text-amber-700">Retards</p>
+                            <p class="text-xl font-black text-amber-700">{{ stats.lateCount }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Usage Instructions Note -->
+            <div class="bg-blue-50/60 p-4 rounded-2xl border border-blue-200 flex items-start space-x-3 text-xs text-blue-900">
+                <i class="fa-solid fa-circle-info text-blue-600 text-sm mt-0.5"></i>
+                <div>
+                    <span class="font-bold">Instructions de pointage des présences :</span>
+                    Lors de chaque événement paroissial, culte, formation des jeunes ou réunion d'association, le membre présente son QR code à l'entrée. Le scan automatique enregistre sa présence en temps réel dans le système paroissial.
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-50 px-6 sm:px-8 py-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center text-[11px] text-slate-500 gap-2">
+            <span>Fiche Générée Officielle • Système de Gestion Paroissiale</span>
+            <span class="font-mono">URL Scan : {{ scanUrl }}</span>
+        </div>
+
+    </div>
+
+</body>
+</html>

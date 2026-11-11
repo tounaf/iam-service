@@ -122,10 +122,13 @@ Toutes les APIs sont préfixées par `/api` et supportent les formats `json`, `j
 
 Chaque membre possède un identifiant de QR code unique (`qrCodeToken`) généré automatiquement sous forme de jeton sécurisé lors de son inscription.
 
-#### 1. Carte de Membre Officielle
-*   `GET /api/membres/{id}/carte` : Génère la fiche/carte de membre officielle.
+#### 1. Carte et Fiche de Membre Officielle
+*   `GET /api/membres/{id}/carte` : Génère la carte de membre officielle format badge.
     *   *Rendu HTML par défaut* : Rendu Twig/Tailwind CSS responsive prêt pour impression avec image QR Code base64 encodée.
     *   *Format JSON* : Accessible via `?format=json` ou header `Accept: application/json`. Retourne les informations du membre, les affiliations, l'URL de scan (`/membres/scan/{token}`) et le lien vers les statistiques de participation.
+*   `GET /api/membres/{id}/fiche` : Génère la fiche de membre officielle complète (A4).
+    *   *Rendu HTML par défaut* : Rendu Twig/Tailwind CSS complet et responsive prêt pour impression avec photo, identité complète, affiliations paroissiales (église, groupe, associations), mandats et rôles CRBAC, QR Code officiel de présence pointant vers `/membres/scan/{token}` et synthèse annuelle du taux d'assiduité (`?year=2026`).
+    *   *Format JSON* : Accessible via `?format=json` ou header `Accept: application/json`. Retourne toutes les métadonnées de la fiche, l'image QR Code en base64 et les statistiques de participation.
 
 #### 2. Génération de l'image du QR Code
 *   `GET /api/membres/{id}/qr-code` : Génère et retourne l'image PNG binaire haute définition (300x300 px) du QR Code unique du membre. Le QR Code encode par défaut l'URL du service de pointage de présence (`/membres/scan/{token}`).
