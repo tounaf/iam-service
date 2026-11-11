@@ -40,7 +40,8 @@ graph TD
 ```
 
 ### Endpoints Implémentés :
-* `GET /api/membres/{id}/carte` : Génère la carte de membre officielle au format HTML responsive (utilisant Twig et Tailwind CSS) prête à l'impression, avec l'image du QR Code encodée en base64 inline.
+* `GET /api/membres/{id}/carte` : Génère la carte de membre officielle au format badge responsive (utilisant Twig et Tailwind CSS) prête à l'impression, avec l'image du QR Code encodée en base64 inline et format JSON.
+* `GET /api/membres/{id}/fiche` : Génère la fiche de membre officielle complète au format A4 pour impression et archivage (identité, contact, paroisse, zone, associations, mandats actifs CRBAC, QR Code de présence pointant vers `/membres/scan/{token}`, et statistiques de participation annuelle). Accessible aussi au format JSON (`?format=json`).
 * `GET /api/membres/{id}/qr-code` : Génère le flux binaire d'image PNG (300x300 px) du Code QR du membre. Supporte le paramètre `?raw=true` pour renvoyer le jeton alphanumérique brut.
 
 ---
